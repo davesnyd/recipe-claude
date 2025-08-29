@@ -1,3 +1,5 @@
+# recipe-claude
+
 # Recipe Management Application
 
 A full-stack recipe management application built with React, Spring Boot, and PostgreSQL.
@@ -83,3 +85,4 @@ Comprehensive documentation is available in the `documentation/` directory:
 - **[🛠️ Development Workflow](documentation/development/workflow.md)** - Setup and daily development
 
 For developers working with this codebase, start with the [Documentation Index](documentation/README.md).
+# recipe-claude
