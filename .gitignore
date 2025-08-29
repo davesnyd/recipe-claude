@@ -1,0 +1,38 @@
+# Environment files containing secrets
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Build artifacts
+backend/target/
+frontend/build/
+frontend/dist/
+
+# Node modules
+node_modules/
+*/node_modules/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+uploads/
+
+# Docker volumes data (optional - uncomment if you don't want to commit volume data)
+# postgres_data/
