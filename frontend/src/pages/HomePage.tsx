@@ -148,7 +148,6 @@ const HomePage: React.FC = () => {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => {
-            alert('Button clicked!');
             console.log('HomePage: Add Recipe button clicked, navigating to /recipe/new');
             navigate('/recipe/new');
           }}
