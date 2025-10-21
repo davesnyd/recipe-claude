@@ -5,6 +5,9 @@
 .env.development
 *.env
 
+# Setup documentation with secrets
+SETUP_PROGRESS.md
+
 # Build artifacts
 backend/target/
 frontend/build/
