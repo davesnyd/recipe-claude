@@ -220,7 +220,7 @@ const RecipeEditPage: React.FC = () => {
 
   return (
     <Layout>
-      <Box sx={{ maxWidth: 800, mx: 'auto', py: 3 }}>
+      <Box sx={{ width: '90%', mx: 'auto', py: 3 }}>
         <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
           {isNew ? 'Create New Recipe' : 'Edit Recipe'}
         </Typography>
@@ -287,22 +287,19 @@ const RecipeEditPage: React.FC = () => {
                     label="Quantity"
                     value={ingredient.quantity || ''}
                     onChange={(e) => handleIngredientChange(index, 'quantity', parseFloat(e.target.value) || 0)}
-                    size="small"
-                    sx={{ width: 80 }}
+                    sx={{ width: 150 }}
                   />
                   <TextField
                     label="Unit"
                     value={ingredient.measurementName || ''}
                     onChange={(e) => handleIngredientChange(index, 'measurementName', e.target.value)}
-                    size="small"
-                    sx={{ width: 120 }}
+                    sx={{ width: 200 }}
                   />
                   <TextField
                     fullWidth
                     label="Ingredient"
                     value={ingredient.ingredientName || ''}
                     onChange={(e) => handleIngredientChange(index, 'ingredientName', e.target.value)}
-                    size="small"
                   />
                   <IconButton
                     onClick={() => removeIngredient(index)}

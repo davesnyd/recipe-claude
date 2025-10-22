@@ -145,14 +145,19 @@ public class RecipeService {
                     }
                     
                     // Find or create measurement
-                    Optional<Measurement> existingMeasurement = measurementRepository.findByMeasurementName(measurementName != null ? measurementName.trim() : "unit");
+                    // Ensure measurementName is not blank - default to "unit" if it is
+                    String effectiveMeasurementName = (measurementName != null && !measurementName.trim().isEmpty())
+                        ? measurementName.trim()
+                        : "unit";
+
+                    Optional<Measurement> existingMeasurement = measurementRepository.findByMeasurementName(effectiveMeasurementName);
                     Measurement measurement;
                     if (existingMeasurement.isPresent()) {
                         measurement = existingMeasurement.get();
                     } else {
                         // Create basic measurement
                         measurement = new Measurement();
-                        measurement.setMeasurementName(measurementName != null ? measurementName.trim() : "unit");
+                        measurement.setMeasurementName(effectiveMeasurementName);
                         measurement.setSystem(Measurement.MeasurementSystem.Imperial); // Default
                         measurement.setMeasurementType(Measurement.MeasurementType.volume); // Default
                         measurement = measurementRepository.save(measurement);
@@ -272,21 +277,24 @@ public class RecipeService {
         Optional<Recipe> existingRecipe = recipeRepository.findById(recipe.getRecipeId());
         if (existingRecipe.isPresent()) {
             Recipe existing = existingRecipe.get();
-            
+
+            System.out.println("RecipeService: Updating recipe fields - servingCount before: " + existing.getServingCount() + ", after: " + recipe.getServingCount());
+
             // Update basic recipe fields
             existing.setTitle(recipe.getTitle());
             existing.setDescription(recipe.getDescription());
             existing.setServingCount(recipe.getServingCount());
             existing.setIsPublic(recipe.getIsPublic());
             existing.setNote(recipe.getNote());
-            
+
             recipe = existing;
         } else {
             // If recipe doesn't exist, save it first
             recipe = recipeRepository.save(recipe);
         }
-        
+
         System.out.println("RecipeService: Recipe updated with ID: " + recipe.getRecipeId());
+        System.out.println("RecipeService: servingCount after assignment: " + recipe.getServingCount());
         
         // Process ingredients
         List<RecipeIngredient> recipeIngredients = new ArrayList<>();
@@ -327,14 +335,19 @@ public class RecipeService {
                     }
                     
                     // Find or create measurement
-                    Optional<Measurement> existingMeasurement = measurementRepository.findByMeasurementName(measurementName != null ? measurementName.trim() : "unit");
+                    // Ensure measurementName is not blank - default to "unit" if it is
+                    String effectiveMeasurementName = (measurementName != null && !measurementName.trim().isEmpty())
+                        ? measurementName.trim()
+                        : "unit";
+
+                    Optional<Measurement> existingMeasurement = measurementRepository.findByMeasurementName(effectiveMeasurementName);
                     Measurement measurement;
                     if (existingMeasurement.isPresent()) {
                         measurement = existingMeasurement.get();
                     } else {
                         // Create basic measurement
                         measurement = new Measurement();
-                        measurement.setMeasurementName(measurementName != null ? measurementName.trim() : "unit");
+                        measurement.setMeasurementName(effectiveMeasurementName);
                         measurement.setSystem(Measurement.MeasurementSystem.Imperial); // Default
                         measurement.setMeasurementType(Measurement.MeasurementType.volume); // Default
                         measurement = measurementRepository.save(measurement);
@@ -392,7 +405,11 @@ public class RecipeService {
         }
         
         System.out.println("RecipeService: Saving " + recipeIngredients.size() + " ingredients and " + recipeSteps.size() + " steps");
-        
-        return recipeRepository.save(recipe);
+        System.out.println("RecipeService: servingCount before save: " + recipe.getServingCount());
+
+        Recipe savedRecipe = recipeRepository.save(recipe);
+        System.out.println("RecipeService: servingCount after save: " + savedRecipe.getServingCount());
+
+        return savedRecipe;
     }
 }

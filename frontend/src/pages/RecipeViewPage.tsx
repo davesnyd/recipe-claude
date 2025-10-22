@@ -109,7 +109,7 @@ const RecipeViewPage: React.FC = () => {
 
   return (
     <Layout>
-      <Box sx={{ maxWidth: 800, mx: 'auto', py: 3 }}>
+      <Box sx={{ width: '90%', mx: 'auto', py: 3 }}>
         <Paper sx={{ p: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
             <Box sx={{ flex: 1 }}>
