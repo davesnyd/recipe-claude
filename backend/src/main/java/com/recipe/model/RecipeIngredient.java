@@ -37,6 +37,9 @@ public class RecipeIngredient {
     @Column(name = "ingredient_order", nullable = false)
     private Integer ingredientOrder = 1;
 
+    @Column(name = "preparation", length = 255)
+    private String preparation;
+
     // Constructors
     public RecipeIngredient() {}
 
@@ -65,4 +68,7 @@ public class RecipeIngredient {
 
     public Integer getIngredientOrder() { return ingredientOrder; }
     public void setIngredientOrder(Integer ingredientOrder) { this.ingredientOrder = ingredientOrder; }
+
+    public String getPreparation() { return preparation; }
+    public void setPreparation(String preparation) { this.preparation = preparation; }
 }

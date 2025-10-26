@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -48,7 +48,7 @@ const RecipeEditPage: React.FC = () => {
   });
   
   const [ingredients, setIngredients] = useState<CreateRecipeIngredient[]>([
-    { quantity: undefined, ingredientName: '', measurementName: '' }
+    { quantity: undefined, ingredientName: '', measurementName: '', preparation: '' }
   ]);
   
   const [steps, setSteps] = useState<Partial<RecipeStep>[]>([
@@ -58,6 +58,12 @@ const RecipeEditPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(!isNew);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Refs for ingredient input fields
+  const ingredientRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  // Refs for step input fields
+  const stepRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   console.log('RecipeEditPage: State initialized, isLoading:', !isNew);
 
@@ -80,8 +86,9 @@ const RecipeEditPage: React.FC = () => {
       const formattedIngredients = (recipeData as any).recipeIngredients?.map((ing: any) => ({
         ingredientName: ing.ingredientName || ing.ingredient?.name || '',
         quantity: ing.quantity,
-        measurementName: ing.measurementName || ing.measurement?.measurementName || ''
-      })) || [{ quantity: undefined, ingredientName: '', measurementName: '' }];
+        measurementName: ing.measurementName || ing.measurement?.measurementName || '',
+        preparation: ing.preparation || ''
+      })) || [{ quantity: undefined, ingredientName: '', measurementName: '', preparation: '' }];
       setIngredients(formattedIngredients);
       setSteps((recipeData as any).recipeSteps || [{ stepNumber: 1, stepText: '' }]);
     } catch (error: any) {
@@ -108,8 +115,19 @@ const RecipeEditPage: React.FC = () => {
     setSteps(newSteps);
   };
 
-  const addIngredient = () => {
-    setIngredients([...ingredients, { quantity: undefined, ingredientName: '', measurementName: '' }]);
+  const addIngredient = (focusQuantity = false) => {
+    const newIndex = ingredients.length;
+    setIngredients([...ingredients, { quantity: undefined, ingredientName: '', measurementName: '', preparation: '' }]);
+
+    if (focusQuantity) {
+      // Focus the quantity field of the new ingredient after state update
+      setTimeout(() => {
+        const quantityRef = ingredientRefs.current[`quantity-${newIndex}`];
+        if (quantityRef) {
+          quantityRef.focus();
+        }
+      }, 0);
+    }
   };
 
   const removeIngredient = (index: number) => {
@@ -118,8 +136,19 @@ const RecipeEditPage: React.FC = () => {
     }
   };
 
-  const addStep = () => {
+  const addStep = (focusNewStep = false) => {
+    const newIndex = steps.length;
     setSteps([...steps, { stepNumber: steps.length + 1, stepText: '' }]);
+
+    if (focusNewStep) {
+      // Focus the new step field after state update
+      setTimeout(() => {
+        const stepRef = stepRefs.current[`step-${newIndex}`];
+        if (stepRef) {
+          stepRef.focus();
+        }
+      }, 0);
+    }
   };
 
   const removeStep = (index: number) => {
@@ -290,19 +319,56 @@ const RecipeEditPage: React.FC = () => {
                       const value = e.target.value;
                       handleIngredientChange(index, 'quantity', value === '' ? undefined : parseFloat(value));
                     }}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const unitRef = ingredientRefs.current[`unit-${index}`];
+                        if (unitRef) unitRef.focus();
+                      }
+                    }}
+                    inputRef={(el) => ingredientRefs.current[`quantity-${index}`] = el}
                     sx={{ width: 150 }}
                   />
                   <TextField
                     label="Unit"
                     value={ingredient.measurementName || ''}
                     onChange={(e) => handleIngredientChange(index, 'measurementName', e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const ingredientRef = ingredientRefs.current[`ingredient-${index}`];
+                        if (ingredientRef) ingredientRef.focus();
+                      }
+                    }}
+                    inputRef={(el) => ingredientRefs.current[`unit-${index}`] = el}
                     sx={{ width: 200 }}
                   />
                   <TextField
-                    fullWidth
                     label="Ingredient"
                     value={ingredient.ingredientName || ''}
                     onChange={(e) => handleIngredientChange(index, 'ingredientName', e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const preparationRef = ingredientRefs.current[`preparation-${index}`];
+                        if (preparationRef) preparationRef.focus();
+                      }
+                    }}
+                    inputRef={(el) => ingredientRefs.current[`ingredient-${index}`] = el}
+                    sx={{ width: 250 }}
+                  />
+                  <TextField
+                    label="Preparation"
+                    value={ingredient.preparation || ''}
+                    onChange={(e) => handleIngredientChange(index, 'preparation', e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addIngredient(true);
+                      }
+                    }}
+                    inputRef={(el) => ingredientRefs.current[`preparation-${index}`] = el}
+                    sx={{ width: 200 }}
                   />
                   <IconButton
                     onClick={() => removeIngredient(index)}
@@ -318,7 +384,7 @@ const RecipeEditPage: React.FC = () => {
 
           <Button
             startIcon={<AddIcon />}
-            onClick={addIngredient}
+            onClick={() => addIngredient(false)}
             sx={{ mb: 3 }}
           >
             Add Ingredient
@@ -344,6 +410,13 @@ const RecipeEditPage: React.FC = () => {
                     label="Step instructions"
                     value={step.stepText || ''}
                     onChange={(e) => handleStepChange(index, e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        addStep(true);
+                      }
+                    }}
+                    inputRef={(el) => stepRefs.current[`step-${index}`] = el}
                   />
                   <IconButton
                     onClick={() => removeStep(index)}
@@ -359,7 +432,7 @@ const RecipeEditPage: React.FC = () => {
 
           <Button
             startIcon={<AddIcon />}
-            onClick={addStep}
+            onClick={() => addStep(false)}
             sx={{ mb: 3 }}
           >
             Add Step

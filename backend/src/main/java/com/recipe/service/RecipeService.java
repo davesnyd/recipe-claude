@@ -120,8 +120,9 @@ public class RecipeService {
                     quantity = (Double) quantityObj;
                 }
                 String measurementName = (String) ingredientData.get("measurementName");
-                
-                System.out.println("RecipeService: Processing ingredient: " + ingredientName + ", qty: " + quantity + ", unit: " + measurementName);
+                String preparation = (String) ingredientData.get("preparation");
+
+                System.out.println("RecipeService: Processing ingredient: " + ingredientName + ", qty: " + quantity + ", unit: " + measurementName + ", prep: " + preparation);
                 
                 if (ingredientName != null && !ingredientName.trim().isEmpty()) {
                     // Find or create ingredient
@@ -172,8 +173,9 @@ public class RecipeService {
                         recipeIngredient.setQuantity(new BigDecimal(quantity));
                     }
                     recipeIngredient.setMeasurement(measurement);
+                    recipeIngredient.setPreparation(preparation);
                     recipeIngredient.setIngredientOrder(i + 1);
-                    
+
                     recipeIngredients.add(recipeIngredient);
                 }
             }
@@ -312,8 +314,9 @@ public class RecipeService {
                     quantity = (Double) quantityObj;
                 }
                 String measurementName = (String) ingredientData.get("measurementName");
-                
-                System.out.println("RecipeService: Processing ingredient: " + ingredientName + ", qty: " + quantity + ", unit: " + measurementName);
+                String preparation = (String) ingredientData.get("preparation");
+
+                System.out.println("RecipeService: Processing ingredient: " + ingredientName + ", qty: " + quantity + ", unit: " + measurementName + ", prep: " + preparation);
                 
                 if (ingredientName != null && !ingredientName.trim().isEmpty()) {
                     // Find or create ingredient
@@ -364,8 +367,9 @@ public class RecipeService {
                         recipeIngredient.setQuantity(new BigDecimal(quantity));
                     }
                     recipeIngredient.setMeasurement(measurement);
+                    recipeIngredient.setPreparation(preparation);
                     recipeIngredient.setIngredientOrder(i + 1);
-                    
+
                     recipeIngredients.add(recipeIngredient);
                 }
             }

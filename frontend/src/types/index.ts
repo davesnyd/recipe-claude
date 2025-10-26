@@ -32,6 +32,7 @@ export interface RecipeIngredient {
   quantity?: number;
   measurement?: Measurement;
   measurementName?: string;
+  preparation?: string;
   ingredientOrder?: number;
 }
 
@@ -39,6 +40,7 @@ export interface CreateRecipeIngredient {
   ingredientName: string;
   quantity?: number;
   measurementName: string;
+  preparation?: string;
   ingredientOrder?: number;
 }
 

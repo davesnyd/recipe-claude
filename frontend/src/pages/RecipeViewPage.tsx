@@ -167,7 +167,7 @@ const RecipeViewPage: React.FC = () => {
                     {(recipe as any).recipeIngredients?.map((ingredient: any, index: number) => (
                       <ListItem key={index} sx={{ px: 0 }}>
                         <ListItemText
-                          primary={`${ingredient.quantity != null ? ingredient.quantity + ' ' : ''}${ingredient.quantity != null ? (ingredient.measurementName || ingredient.measurement?.measurementName || '') + ' ' : ''}${ingredient.ingredientName || ingredient.ingredient?.name || ''}`}
+                          primary={`${ingredient.quantity != null ? ingredient.quantity + ' ' : ''}${ingredient.quantity != null ? (ingredient.measurementName || ingredient.measurement?.measurementName || '') + ' ' : ''}${ingredient.ingredientName || ingredient.ingredient?.name || ''}${ingredient.preparation ? ', ' + ingredient.preparation : ''}`}
                         />
                       </ListItem>
                     )) || (
