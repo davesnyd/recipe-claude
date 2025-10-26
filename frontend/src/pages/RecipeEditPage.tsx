@@ -48,7 +48,7 @@ const RecipeEditPage: React.FC = () => {
   });
   
   const [ingredients, setIngredients] = useState<CreateRecipeIngredient[]>([
-    { quantity: 0, ingredientName: '', measurementName: '' }
+    { quantity: undefined, ingredientName: '', measurementName: '' }
   ]);
   
   const [steps, setSteps] = useState<Partial<RecipeStep>[]>([
@@ -81,7 +81,7 @@ const RecipeEditPage: React.FC = () => {
         ingredientName: ing.ingredientName || ing.ingredient?.name || '',
         quantity: ing.quantity,
         measurementName: ing.measurementName || ing.measurement?.measurementName || ''
-      })) || [{ quantity: 0, ingredientName: '', measurementName: '' }];
+      })) || [{ quantity: undefined, ingredientName: '', measurementName: '' }];
       setIngredients(formattedIngredients);
       setSteps((recipeData as any).recipeSteps || [{ stepNumber: 1, stepText: '' }]);
     } catch (error: any) {
@@ -109,7 +109,7 @@ const RecipeEditPage: React.FC = () => {
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { quantity: 0, ingredientName: '', measurementName: '' }]);
+    setIngredients([...ingredients, { quantity: undefined, ingredientName: '', measurementName: '' }]);
   };
 
   const removeIngredient = (index: number) => {
@@ -285,8 +285,11 @@ const RecipeEditPage: React.FC = () => {
                   <TextField
                     type="number"
                     label="Quantity"
-                    value={ingredient.quantity || ''}
-                    onChange={(e) => handleIngredientChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                    value={ingredient.quantity ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleIngredientChange(index, 'quantity', value === '' ? undefined : parseFloat(value));
+                    }}
                     sx={{ width: 150 }}
                   />
                   <TextField

@@ -123,7 +123,7 @@ public class RecipeService {
                 
                 System.out.println("RecipeService: Processing ingredient: " + ingredientName + ", qty: " + quantity + ", unit: " + measurementName);
                 
-                if (ingredientName != null && !ingredientName.trim().isEmpty() && quantity != null) {
+                if (ingredientName != null && !ingredientName.trim().isEmpty()) {
                     // Find or create ingredient
                     Optional<Ingredient> existingIngredient = ingredientRepository.findByNameIgnoreCase(ingredientName.trim());
                     Ingredient ingredient;
@@ -168,7 +168,9 @@ public class RecipeService {
                     RecipeIngredient recipeIngredient = new RecipeIngredient();
                     recipeIngredient.setRecipe(savedRecipe);
                     recipeIngredient.setIngredient(ingredient);
-                    recipeIngredient.setQuantity(new BigDecimal(quantity));
+                    if (quantity != null) {
+                        recipeIngredient.setQuantity(new BigDecimal(quantity));
+                    }
                     recipeIngredient.setMeasurement(measurement);
                     recipeIngredient.setIngredientOrder(i + 1);
                     
@@ -313,7 +315,7 @@ public class RecipeService {
                 
                 System.out.println("RecipeService: Processing ingredient: " + ingredientName + ", qty: " + quantity + ", unit: " + measurementName);
                 
-                if (ingredientName != null && !ingredientName.trim().isEmpty() && quantity != null) {
+                if (ingredientName != null && !ingredientName.trim().isEmpty()) {
                     // Find or create ingredient
                     Optional<Ingredient> existingIngredient = ingredientRepository.findByNameIgnoreCase(ingredientName.trim());
                     Ingredient ingredient;
@@ -358,7 +360,9 @@ public class RecipeService {
                     RecipeIngredient recipeIngredient = new RecipeIngredient();
                     recipeIngredient.setRecipe(recipe);
                     recipeIngredient.setIngredient(ingredient);
-                    recipeIngredient.setQuantity(new BigDecimal(quantity));
+                    if (quantity != null) {
+                        recipeIngredient.setQuantity(new BigDecimal(quantity));
+                    }
                     recipeIngredient.setMeasurement(measurement);
                     recipeIngredient.setIngredientOrder(i + 1);
                     

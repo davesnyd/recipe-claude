@@ -26,7 +26,7 @@ public class RecipeIngredient {
     private Ingredient ingredient;
 
     @Positive
-    @Column(nullable = false, precision = 10, scale = 3)
+    @Column(nullable = true, precision = 10, scale = 3)
     private BigDecimal quantity;
 
     @ManyToOne(fetch = FetchType.LAZY)
