@@ -23,11 +23,14 @@ import {
   FavoriteBorder as FavoriteBorderIcon,
   Share as ShareIcon,
   Print as PrintIcon,
+  PictureAsPdf as PdfIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { recipeApi } from '../services/api';
 import { Recipe } from '../types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const RecipeViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -79,6 +82,99 @@ const RecipeViewPage: React.FC = () => {
     } catch (error) {
       console.error('Error toggling favorite:', error);
     }
+  };
+
+  const handleCreatePDF = () => {
+    if (!recipe) return;
+
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text(recipe.title, 15, 20);
+
+    // Metadata
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`By ${recipe.createUsername} • Created ${new Date(recipe.creationDate).toLocaleDateString()}`, 15, 28);
+    doc.text(`Serves ${recipe.servingCount}`, 15, 34);
+
+    // Description
+    if (recipe.description) {
+      doc.setFontSize(11);
+      const splitDescription = doc.splitTextToSize(recipe.description, 180);
+      doc.text(splitDescription, 15, 42);
+    }
+
+    let yPosition = recipe.description ? 42 + (doc.splitTextToSize(recipe.description, 180).length * 5) + 10 : 45;
+
+    // Ingredients
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Ingredients', 15, yPosition);
+    yPosition += 8;
+
+    const ingredientsData = (recipe as any).recipeIngredients?.map((ingredient: any) => {
+      const qty = ingredient.quantity != null ? ingredient.quantity + ' ' : '';
+      const unit = ingredient.quantity != null ? (ingredient.measurementName || ingredient.measurement?.measurementName || '') + ' ' : '';
+      const name = ingredient.ingredientName || ingredient.ingredient?.name || '';
+      const prep = ingredient.preparation ? ', ' + ingredient.preparation : '';
+      return [`${qty}${unit}${name}${prep}`];
+    }) || [];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [],
+      body: ingredientsData,
+      theme: 'plain',
+      styles: { fontSize: 10 },
+      margin: { left: 15 },
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+    // Instructions
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Instructions', 15, yPosition);
+    yPosition += 8;
+
+    const stepsData = (recipe as any).recipeSteps?.map((step: any) => [
+      step.stepNumber.toString(),
+      step.stepText
+    ]) || [];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [],
+      body: stepsData,
+      theme: 'plain',
+      styles: { fontSize: 10 },
+      columnStyles: {
+        0: { cellWidth: 15, fontStyle: 'bold' },
+        1: { cellWidth: 'auto' }
+      },
+      margin: { left: 15 },
+    });
+
+    // Notes
+    if (recipe.note) {
+      yPosition = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Notes', 15, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const splitNotes = doc.splitTextToSize(recipe.note, 180);
+      doc.text(splitNotes, 15, yPosition);
+    }
+
+    // Save with recipe title as filename
+    const filename = `${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+    doc.save(filename);
   };
 
   const canEdit = recipe && recipe.createUsername === user?.username;
@@ -239,6 +335,13 @@ const RecipeViewPage: React.FC = () => {
               Back to Recipes
             </Button>
             <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="contained"
+                startIcon={<PdfIcon />}
+                onClick={handleCreatePDF}
+              >
+                Create PDF
+              </Button>
               <IconButton>
                 <ShareIcon />
               </IconButton>
