@@ -11,6 +11,7 @@ import {
   Box,
   Typography,
   Chip,
+  Checkbox,
 } from '@mui/material';
 import {
   Visibility,
@@ -28,6 +29,8 @@ interface RecipeTableProps {
   userFavorites: number[];
   canEdit?: (recipe: Recipe) => boolean;
   showFavoriteButton?: boolean;
+  selectedRecipes?: number[];
+  onSelectRecipe?: (recipeId: number) => void;
 }
 
 const RecipeTable: React.FC<RecipeTableProps> = ({
@@ -38,8 +41,11 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
   userFavorites,
   canEdit = () => true,
   showFavoriteButton = true,
+  selectedRecipes = [],
+  onSelectRecipe,
 }) => {
   const isFavorite = (recipeId: number) => userFavorites.includes(recipeId);
+  const isSelected = (recipeId: number) => selectedRecipes.includes(recipeId);
 
   if (recipes.length === 0) {
     return (
@@ -56,6 +62,11 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
       <Table>
         <TableHead sx={{ backgroundColor: 'primary.main' }}>
           <TableRow>
+            {onSelectRecipe && (
+              <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold', width: 50 }}>
+                Select
+              </TableCell>
+            )}
             <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
               Title
             </TableCell>
@@ -80,6 +91,14 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
               hover
               sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
             >
+              {onSelectRecipe && (
+                <TableCell>
+                  <Checkbox
+                    checked={isSelected(recipe.recipeId)}
+                    onChange={() => onSelectRecipe(recipe.recipeId)}
+                  />
+                </TableCell>
+              )}
               <TableCell>
                 <Box>
                   <Typography variant="subtitle1" fontWeight="medium">
