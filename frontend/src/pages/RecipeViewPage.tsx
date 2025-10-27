@@ -16,6 +16,13 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -24,6 +31,7 @@ import {
   Share as ShareIcon,
   Print as PrintIcon,
   PictureAsPdf as PdfIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +49,8 @@ const RecipeViewPage: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'recipeml' | 'jsonld'>('recipeml');
 
   useEffect(() => {
     if (id) {
@@ -82,6 +92,15 @@ const RecipeViewPage: React.FC = () => {
     } catch (error) {
       console.error('Error toggling favorite:', error);
     }
+  };
+
+  const escapeXml = (str: string): string => {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   };
 
   const handleCreatePDF = () => {
@@ -175,6 +194,201 @@ const RecipeViewPage: React.FC = () => {
     // Save with recipe title as filename
     const filename = `${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
     doc.save(filename);
+  };
+
+  const handleExportRecipeML = () => {
+    console.log('handleExportRecipeML: Starting RecipeML export');
+    if (!recipe) {
+      console.error('handleExportRecipeML: No recipe data available');
+      return;
+    }
+
+    try {
+      console.log('handleExportRecipeML: Recipe data:', recipe);
+
+      // Safely format date
+      let formattedDate = '';
+      try {
+        const date = new Date(recipe.creationDate);
+        if (!isNaN(date.getTime())) {
+          formattedDate = date.toISOString().split('T')[0];
+        } else {
+          formattedDate = new Date().toISOString().split('T')[0];
+          console.warn('handleExportRecipeML: Invalid creationDate, using current date');
+        }
+      } catch (dateError) {
+        formattedDate = new Date().toISOString().split('T')[0];
+        console.warn('handleExportRecipeML: Error parsing date, using current date:', dateError);
+      }
+
+      // Create RecipeML XML format
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<recipeml version="0.5">\n';
+      xml += '  <recipe>\n';
+      xml += `    <head>\n`;
+      xml += `      <title>${escapeXml(recipe.title)}</title>\n`;
+      xml += `      <source>${escapeXml(recipe.createUsername)}</source>\n`;
+      xml += `      <date>${formattedDate}</date>\n`;
+      xml += `      <yield>${recipe.servingCount} servings</yield>\n`;
+      if (recipe.description) {
+        xml += `      <description>${escapeXml(recipe.description)}</description>\n`;
+      }
+      xml += `    </head>\n`;
+
+      // Ingredients
+      xml += '    <ingredients>\n';
+      (recipe as any).recipeIngredients?.forEach((ingredient: any) => {
+        xml += '      <ing>\n';
+        if (ingredient.quantity != null) {
+          xml += `        <amt><qty>${ingredient.quantity}</qty></amt>\n`;
+        }
+        const unit = ingredient.measurementName || ingredient.measurement?.measurementName || '';
+        if (unit) {
+          xml += `        <unit>${escapeXml(unit)}</unit>\n`;
+        }
+        const name = ingredient.ingredientName || ingredient.ingredient?.name || '';
+        xml += `        <item>${escapeXml(name)}</item>\n`;
+        if (ingredient.preparation) {
+          xml += `        <prep>${escapeXml(ingredient.preparation)}</prep>\n`;
+        }
+        xml += '      </ing>\n';
+      });
+      xml += '    </ingredients>\n';
+
+      // Directions
+      xml += '    <directions>\n';
+      (recipe as any).recipeSteps?.forEach((step: any) => {
+        xml += `      <step>${escapeXml(step.stepText)}</step>\n`;
+      });
+      xml += '    </directions>\n';
+
+      // Notes
+      if (recipe.note) {
+        xml += `    <note>${escapeXml(recipe.note)}</note>\n`;
+      }
+
+      xml += '  </recipe>\n';
+      xml += '</recipeml>';
+
+      console.log('handleExportRecipeML: Generated XML:', xml.substring(0, 200) + '...');
+
+      // Download file
+      const blob = new Blob([xml], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.xml`;
+      link.download = filename;
+      console.log('handleExportRecipeML: Downloading file:', filename);
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('handleExportRecipeML: Export completed successfully');
+    } catch (error) {
+      console.error('handleExportRecipeML: Error during export:', error);
+      alert(`Error exporting RecipeML: ${error}`);
+      throw error;
+    }
+  };
+
+  const handleExportJsonLd = () => {
+    console.log('handleExportJsonLd: Starting JSON-LD export');
+    if (!recipe) {
+      console.error('handleExportJsonLd: No recipe data available');
+      return;
+    }
+
+    try {
+      console.log('handleExportJsonLd: Recipe data:', recipe);
+
+      // Safely format date
+      let datePublished = '';
+      try {
+        const date = new Date(recipe.creationDate);
+        if (!isNaN(date.getTime())) {
+          datePublished = date.toISOString();
+        } else {
+          datePublished = new Date().toISOString();
+          console.warn('handleExportJsonLd: Invalid creationDate, using current date');
+        }
+      } catch (dateError) {
+        datePublished = new Date().toISOString();
+        console.warn('handleExportJsonLd: Error parsing date, using current date:', dateError);
+      }
+
+      // Create JSON-LD format using schema.org Recipe
+      const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Recipe',
+        name: recipe.title,
+        author: {
+          '@type': 'Person',
+          name: recipe.createUsername
+        },
+        datePublished: datePublished,
+        description: recipe.description || '',
+        recipeYield: `${recipe.servingCount} servings`,
+        recipeIngredient: (recipe as any).recipeIngredients?.map((ingredient: any) => {
+          const qty = ingredient.quantity != null ? ingredient.quantity + ' ' : '';
+          const unit = ingredient.quantity != null ? (ingredient.measurementName || ingredient.measurement?.measurementName || '') + ' ' : '';
+          const name = ingredient.ingredientName || ingredient.ingredient?.name || '';
+          const prep = ingredient.preparation ? ', ' + ingredient.preparation : '';
+          return `${qty}${unit}${name}${prep}`;
+        }) || [],
+        recipeInstructions: (recipe as any).recipeSteps?.map((step: any, index: number) => ({
+          '@type': 'HowToStep',
+          position: index + 1,
+          text: step.stepText
+        })) || []
+      };
+
+      if (recipe.note) {
+        (jsonLd as any).comment = recipe.note;
+      }
+
+      console.log('handleExportJsonLd: Generated JSON-LD:', jsonLd);
+
+      // Download file
+      const json = JSON.stringify(jsonLd, null, 2);
+      const blob = new Blob([json], { type: 'application/ld+json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jsonld`;
+      link.download = filename;
+      console.log('handleExportJsonLd: Downloading file:', filename);
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('handleExportJsonLd: Export completed successfully');
+    } catch (error) {
+      console.error('handleExportJsonLd: Error during export:', error);
+      alert(`Error exporting JSON-LD: ${error}`);
+      throw error;
+    }
+  };
+
+  const handleExport = () => {
+    console.log('handleExport: Starting export, format:', exportFormat);
+    try {
+      if (exportFormat === 'recipeml') {
+        handleExportRecipeML();
+      } else {
+        handleExportJsonLd();
+      }
+      console.log('handleExport: Export completed, closing dialog');
+    } catch (error) {
+      console.error('handleExport: Error during export:', error);
+    } finally {
+      setExportDialogOpen(false);
+      console.log('handleExport: Dialog closed');
+    }
   };
 
   const canEdit = recipe && recipe.createUsername === user?.username;
@@ -342,6 +556,13 @@ const RecipeViewPage: React.FC = () => {
               >
                 Create PDF
               </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ExportIcon />}
+                onClick={() => setExportDialogOpen(true)}
+              >
+                Export...
+              </Button>
               <IconButton>
                 <ShareIcon />
               </IconButton>
@@ -351,6 +572,39 @@ const RecipeViewPage: React.FC = () => {
             </Box>
           </Box>
         </Paper>
+
+        {/* Export Dialog */}
+        <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)}>
+          <DialogTitle>Export Recipe</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Select the export format:
+            </Typography>
+            <RadioGroup
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value as 'recipeml' | 'jsonld')}
+            >
+              <FormControlLabel
+                value="recipeml"
+                control={<Radio />}
+                label="RecipeML (XML format)"
+              />
+              <FormControlLabel
+                value="jsonld"
+                control={<Radio />}
+                label="JSON-LD (schema.org format)"
+              />
+            </RadioGroup>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setExportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleExport} variant="contained">
+              Export
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Layout>
   );
