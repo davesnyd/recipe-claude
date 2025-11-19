@@ -43,7 +43,7 @@ This directory contains comprehensive documentation for understanding and workin
 
 ### Data Flow
 ```
-Frontend (React) → API (Spring Boot) → Database (PostgreSQL)
+Frontend (React 19) → API (Spring Boot 3.2) → Database (PostgreSQL 15)
 ```
 
 ### Authentication
@@ -54,10 +54,23 @@ Frontend (React) → API (Spring Boot) → Database (PostgreSQL)
 ### Field Name Mapping
 ⚠️ **Critical**: Backend uses `recipeIngredients`/`recipeSteps`, frontend expects `ingredients`/`steps`. See documentation for handling patterns.
 
+### Export Functionality
+- **PDF Export**: jsPDF-based recipe cards
+- **JSON-LD**: schema.org Recipe format for SEO
+- **RecipeML**: XML-based recipe exchange format
+- **Batch Export**: Export multiple recipes at once
+
 ### Docker Environment
 - All services containerized with Docker Compose
 - Development environment fully reproducible
 - Volume persistence for database data
+
+### Recent Features
+- Ingredient preparation field (e.g., "chopped", "sifted")
+- Optional ingredient quantities for "to taste" items
+- Keyboard navigation (Ctrl+Enter) in forms
+- Batch recipe export functionality
+- Multiple export formats (PDF, JSON-LD, RecipeML)
 
 ## 📖 Documentation Standards
 
@@ -106,9 +119,11 @@ For questions about the codebase or documentation:
 ### External Documentation
 - [Spring Boot Docs](https://spring.io/projects/spring-boot)
 - [React Documentation](https://react.dev/)
-- [Material-UI](https://mui.com/)
+- [Material-UI v7](https://mui.com/)
 - [PostgreSQL Docs](https://postgresql.org/docs/)
+- [jsPDF Documentation](https://github.com/parallax/jsPDF)
+- [schema.org Recipe](https://schema.org/Recipe)
 
 ---
 
-*This documentation is maintained alongside the codebase. Last updated: 2024*
+*This documentation is maintained alongside the codebase. Last updated: January 2025*

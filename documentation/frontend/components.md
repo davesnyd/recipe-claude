@@ -2,12 +2,13 @@
 
 ## Architecture Overview
 
-The frontend is built with React TypeScript and follows a component-based architecture with:
+The frontend is built with React 19.1 and TypeScript 4.9, following a component-based architecture with:
 - **Pages**: Top-level route components
-- **Components**: Reusable UI components  
+- **Components**: Reusable UI components
 - **Contexts**: Global state management
 - **Services**: API communication layer
 - **Types**: TypeScript interfaces
+- **Material-UI v7.3**: Modern UI component library with theming
 
 ## Project Structure
 
@@ -98,20 +99,35 @@ interface RecipeTableProps {
 ## Page Components
 
 ### HomePage.tsx
-Main dashboard showing user's recipes with navigation tabs.
+Main dashboard showing user's recipes with navigation tabs and export functionality.
 
 **Features**:
 - Tab navigation (My Recipes, Favorites, All Recipes)
 - Recipe table integration
 - Create new recipe button
 - Search and filter capabilities
+- **Batch Export**: Export multiple recipes at once in various formats
+  - PDF format with formatted recipe cards
+  - JSON-LD (schema.org Recipe format)
+  - RecipeML (XML-based recipe format)
+- Export dialog with format selection
+- Keyboard navigation support (Ctrl+Enter to submit forms)
 
 **State Management**:
 ```typescript
 const [activeTab, setActiveTab] = useState(0);
-const [recipes, setRecipes] = useState<Recipe[]>([]);
+const [myRecipes, setMyRecipes] = useState<Recipe[]>([]);
+const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>([]);
+const [publicRecipes, setPublicRecipes] = useState<Recipe[]>([]);
 const [isLoading, setIsLoading] = useState(true);
+const [exportDialogOpen, setExportDialogOpen] = useState(false);
+const [exportFormat, setExportFormat] = useState<'pdf' | 'jsonld' | 'recipeml'>('pdf');
 ```
+
+**Export Functionality**:
+- PDF: Uses jsPDF and jsPDF-AutoTable for formatted output
+- JSON-LD: Structured data format for search engines
+- RecipeML: XML-based recipe exchange format
 
 ### LoginPage.tsx
 Authentication entry point for the application.
@@ -128,9 +144,13 @@ Create and edit recipe form with dynamic ingredients/steps.
 **Key Features**:
 - Dynamic form with add/remove ingredients
 - Dynamic cooking steps management
+- **Ingredient preparation field**: Optional field for preparation instructions (e.g., "chopped", "sifted")
+- **Optional quantities**: Support for "to taste" ingredients without specified amounts
+- **Keyboard navigation**: Ctrl+Enter submits ingredient/instruction entries
+- Drag-and-drop reordering for ingredients and steps
 - Form validation
-- Auto-save drafts (if implemented)
-- Image upload support (placeholder)
+- Image upload support via react-dropzone
+- File upload for recipe and step photos
 
 **State Management**:
 ```typescript
@@ -145,22 +165,36 @@ const [error, setError] = useState<string | null>(null);
 - Handles both create (new recipe) and edit (existing recipe) modes
 - Uses different field names for backend compatibility (`recipeIngredients` vs `ingredients`)
 - Implements proper form validation
+- Supports multipart file uploads for photos (max 10MB)
 
-### RecipeViewPage.tsx  
-Display detailed recipe information in a readable format.
+### RecipeViewPage.tsx
+Display detailed recipe information in a readable format with export options.
 
 **Features**:
 - Recipe metadata display (title, author, servings)
-- Ingredients list with quantities and units
+- Ingredients list with quantities, units, and preparation instructions
 - Step-by-step instructions with numbering
 - Favorite/unfavorite functionality
 - Edit button for recipe owners
-- Print and share actions (placeholder)
+- **Export functionality**: Download recipe in multiple formats
+  - **PDF**: Formatted recipe card with all details
+  - **JSON-LD**: schema.org Recipe format for SEO
+  - **RecipeML**: XML-based recipe exchange format
+- Nutritional information display
+- Photo display for recipes and steps
 
 **Key Implementation**:
 - Handles field name mapping from backend (`recipeIngredients` → display)
 - Permission-based UI (edit only for owners)
 - Responsive layout for mobile devices
+- Client-side export generation (no server dependency)
+
+**Export Formats**:
+```typescript
+// PDF: jsPDF with formatted layout
+// JSON-LD: schema.org/Recipe structured data
+// RecipeML: XML format for recipe exchange
+```
 
 ## Context Providers
 
@@ -246,7 +280,19 @@ interface Recipe {
 }
 ```
 
-**Important**: Note the field name discrepancy between frontend types (`ingredients`, `steps`) and backend response (`recipeIngredients`, `recipeSteps`).
+**RecipeIngredient**:
+```typescript
+interface RecipeIngredient {
+  recipeIngredientId?: number;
+  ingredientName: string;
+  quantity?: number;                // Optional for "to taste" ingredients
+  measurementName: string;
+  preparation?: string;              // Optional preparation instruction
+  ingredientOrder: number;
+}
+```
+
+**Important**: Note the field name discrepancy between frontend types (`ingredients`, `steps`) and backend response (`recipeIngredients`, `recipeSteps`). Frontend code uses type assertions like `(recipe as any).recipeIngredients` to handle this.
 
 ## State Management Patterns
 
@@ -270,16 +316,20 @@ Currently uses direct API calls with local state. Consider implementing:
 
 ## Styling and Theming
 
-### Material-UI Integration
+### Material-UI v7.3 Integration
 - Custom theme defined in `theme.ts`
-- Maroon and cream color scheme
+- **Maroon and cream color scheme**: Brand colors consistently applied
+  - Primary: Maroon (#800000)
+  - Secondary: Cream (#FFFDD0)
 - Responsive breakpoints configured
 - Typography scales defined
+- Emotion-based styling system
 
 ### Component Styling
 - Uses Material-UI's `sx` prop for inline styling
-- Theme-aware color and spacing
+- Theme-aware color and spacing via emotion
 - Responsive design utilities
+- Icon library: @mui/icons-material v7.3
 
 ## Development Patterns
 

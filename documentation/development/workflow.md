@@ -73,6 +73,17 @@ docker compose logs -f
 3. Test API changes at http://localhost:8080/api
 
 #### Database Changes
+
+**Option 1: Using Hibernate Auto-Update (Current Development Mode)**
+1. Edit JPA entity classes in `backend/src/main/java/com/recipe/model/`
+2. Rebuild and restart backend:
+   ```bash
+   docker compose build backend
+   docker compose restart backend
+   ```
+3. Hibernate will automatically update the schema on startup (ddl-auto: update)
+
+**Option 2: Manual Schema Changes (Production Approach)**
 1. Edit `database/init.sql` for schema changes
 2. **Warning**: This requires recreating database:
    ```bash
@@ -80,6 +91,8 @@ docker compose logs -f
    docker volume rm recipe002_postgres_data
    docker compose up -d
    ```
+
+**Note**: For production, consider using database migration tools like Flyway or Liquibase instead of Hibernate auto-updates.
 
 ### Stopping Development
 ```bash
@@ -210,7 +223,9 @@ docker compose build --no-cache frontend
 
 **Field Name Mismatch**:
 - Backend returns `recipeIngredients`, frontend expects `ingredients`
-- Use `(recipe as any).recipeIngredients` in frontend
+- Backend returns `recipeSteps`, frontend expects `steps`
+- Use `(recipe as any).recipeIngredients` and `(recipe as any).recipeSteps` in frontend
+- This is intentional to maintain JPA naming while supporting frontend conventions
 - See CLAUDE.md for detailed explanation
 
 **Authentication Issues**:
@@ -234,9 +249,11 @@ docker compose build --no-cache frontend
 - Set appropriate CORS origins
 
 #### Database
-- Use proper database migrations instead of `ddl-auto: create-drop`
-- Set up database backups
+- Use proper database migrations (Flyway or Liquibase) instead of `ddl-auto: update`
+- Change `ddl-auto` setting from `update` to `validate` in production
+- Set up automated database backups
 - Configure connection pooling for scale
+- Consider read replicas for high traffic
 
 #### Security  
 - Enable HTTPS for production

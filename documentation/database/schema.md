@@ -122,8 +122,9 @@ Junction table linking recipes to ingredients with quantities.
 | recipe_ingredient_id | SERIAL | PRIMARY KEY | Auto-incrementing identifier |
 | recipe_id | INTEGER | NOT NULL, FK → recipes.recipe_id | Associated recipe |
 | ingredient_id | INTEGER | NOT NULL, FK → ingredients.ingredient_id | Associated ingredient |
-| quantity | DECIMAL(10,3) | NOT NULL | Ingredient quantity |
+| quantity | DECIMAL(10,3) | | Ingredient quantity (optional) |
 | measurement_id | INTEGER | NOT NULL, FK → measurements.measurement_id | Unit of measurement |
+| preparation | VARCHAR(255) | | Optional preparation instruction (e.g., "chopped", "sifted") |
 | ingredient_order | INTEGER | NOT NULL, DEFAULT 1 | Display order in recipe |
 
 ### recipe_steps
@@ -174,6 +175,15 @@ The system comes with predefined measurement units:
 - Weight: ounce, pound
 - Volume: teaspoon, tablespoon, ounce, cup, pint, quart, gallon
 
+## Schema Evolution
+
+**Note**: The application uses Hibernate's `ddl-auto: update` setting, which means schema changes may be automatically applied when the application starts. Some fields (like `preparation` in `recipe_ingredients`) may have been added after the initial schema creation via Hibernate auto-updates.
+
+For production deployments, consider:
+- Using explicit database migration tools (Flyway or Liquibase)
+- Changing `ddl-auto` to `validate` to prevent automatic schema changes
+- Maintaining migration scripts for version control
+
 ## Business Rules
 
 ### Data Integrity
@@ -182,6 +192,7 @@ The system comes with predefined measurement units:
 3. Recipe steps must belong to a valid recipe
 4. Users cannot favorite the same recipe twice
 5. Cascade deletes ensure referential integrity
+6. Ingredient quantities are now optional to support "to taste" ingredients
 
 ### Nutritional Calculations
 - All nutritional values are stored per 100g/100ml

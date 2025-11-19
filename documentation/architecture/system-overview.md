@@ -22,20 +22,23 @@ The Recipe Management Application follows a three-tier architecture pattern:
 ## Technology Stack
 
 ### Frontend (React TypeScript)
-- **Framework**: React 18 with TypeScript
-- **UI Library**: Material-UI (MUI) v5
+- **Framework**: React 19.1 with TypeScript 4.9
+- **UI Library**: Material-UI (MUI) v7.3
 - **Routing**: React Router v6
 - **HTTP Client**: Axios
 - **Authentication**: Google OAuth 2.0
-- **Build Tool**: Create React App
-- **Container**: Docker with nginx serving static files
+- **PDF Generation**: jsPDF with jsPDF-AutoTable
+- **File Upload**: react-dropzone
+- **Build Tool**: Create React App (React Scripts 5.0)
+- **Container**: Docker with serve for static files
 
 ### Backend (Spring Boot)
-- **Framework**: Spring Boot 3.x
-- **Language**: Java 17+
-- **Security**: Spring Security with OAuth2 and JWT
-- **Data Access**: Spring Data JPA with Hibernate
+- **Framework**: Spring Boot 3.2.0
+- **Language**: Java 17
+- **Security**: Spring Security with OAuth2 and JWT (jjwt 0.11.5)
+- **Data Access**: Spring Data JPA with Hibernate 6
 - **API**: RESTful web services
+- **File Upload**: Multipart file handling (max 10MB)
 - **Build Tool**: Maven
 - **Container**: Docker with embedded Tomcat
 
@@ -90,6 +93,12 @@ The Recipe Management Application follows a three-tier architecture pattern:
 4. Data serialized to JSON with proper field names
 5. Frontend receives and displays data
 
+### Recipe Export
+1. User selects export format (PDF, JSON-LD, RecipeML, or batch export)
+2. Frontend generates export file using jsPDF or XML/JSON formatting
+3. File is downloaded to user's device
+4. Supports single recipe or batch export of multiple recipes
+
 ## Security Considerations
 
 ### Environment Variables
@@ -117,7 +126,7 @@ The Recipe Management Application follows a three-tier architecture pattern:
 - Connection pooling via HikariCP
 
 ### Caching
-- Static frontend assets cached by nginx
+- Static frontend assets served with caching headers
 - Database query optimization through JPA
 
 ### Scalability

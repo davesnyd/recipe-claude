@@ -16,7 +16,7 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material';
-import { Add as AddIcon, FileDownload as ExportIcon } from '@mui/icons-material';
+import { Add as AddIcon, FileDownload as ExportIcon, FileUpload as ImportIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import RecipeTable from '../components/RecipeTable';
@@ -56,6 +56,10 @@ const HomePage: React.FC = () => {
   const [selectedRecipes, setSelectedRecipes] = useState<number[]>([]);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'recipeml' | 'jsonld'>('pdf');
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -434,6 +438,223 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+      setImportResults(null);
+    }
+  };
+
+  const parseJsonLd = (content: string): any[] => {
+    try {
+      const parsed = JSON.parse(content);
+      // Handle both single recipe and array of recipes
+      const recipes = Array.isArray(parsed) ? parsed : [parsed];
+
+      return recipes.map((recipe: any) => {
+        // Extract serving count from recipeYield
+        let servingCount = 1;
+        if (recipe.recipeYield) {
+          const match = recipe.recipeYield.toString().match(/(\d+)/);
+          if (match) {
+            servingCount = parseInt(match[1]);
+          }
+        }
+
+        // Parse ingredients
+        const ingredients = (recipe.recipeIngredient || []).map((ingStr: string) => {
+          // Try to parse "quantity unit ingredient, preparation" format
+          const parts = ingStr.split(',');
+          const mainPart = parts[0].trim();
+          const preparation = parts.length > 1 ? parts.slice(1).join(',').trim() : '';
+
+          const words = mainPart.split(' ');
+          let quantity: number | undefined = undefined;
+          let measurementName = '';
+          let ingredientName = '';
+
+          // Try to parse first word as quantity
+          const firstNum = parseFloat(words[0]);
+          if (!isNaN(firstNum)) {
+            quantity = firstNum;
+            // Check if second word is a unit
+            if (words.length > 2) {
+              measurementName = words[1];
+              ingredientName = words.slice(2).join(' ');
+            } else if (words.length > 1) {
+              ingredientName = words.slice(1).join(' ');
+            }
+          } else {
+            ingredientName = mainPart;
+          }
+
+          return {
+            quantity,
+            measurementName,
+            ingredientName,
+            preparation
+          };
+        });
+
+        // Parse steps
+        const steps = (recipe.recipeInstructions || []).map((step: any, index: number) => ({
+          stepNumber: index + 1,
+          stepText: typeof step === 'string' ? step : step.text || ''
+        }));
+
+        return {
+          title: recipe.name || 'Untitled Recipe',
+          description: recipe.description || '',
+          servingCount,
+          isPublic: false, // Default to private when importing
+          note: recipe.comment || '',
+          ingredients,
+          steps
+        };
+      });
+    } catch (error) {
+      console.error('Error parsing JSON-LD:', error);
+      throw new Error('Invalid JSON-LD format');
+    }
+  };
+
+  const parseRecipeML = (content: string): any[] => {
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(content, 'text/xml');
+
+      // Check for parsing errors
+      const parserError = xmlDoc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error('Invalid XML format');
+      }
+
+      const recipeNodes = xmlDoc.querySelectorAll('recipe');
+      const recipes: any[] = [];
+
+      recipeNodes.forEach((recipeNode) => {
+        const title = recipeNode.querySelector('title')?.textContent || 'Untitled Recipe';
+        const description = recipeNode.querySelector('description')?.textContent || '';
+        const note = recipeNode.querySelector('note')?.textContent || '';
+
+        // Parse yield
+        let servingCount = 1;
+        const yieldText = recipeNode.querySelector('yield')?.textContent || '';
+        const yieldMatch = yieldText.match(/(\d+)/);
+        if (yieldMatch) {
+          servingCount = parseInt(yieldMatch[1]);
+        }
+
+        // Parse ingredients
+        const ingredients: any[] = [];
+        const ingNodes = recipeNode.querySelectorAll('ing');
+        ingNodes.forEach((ingNode) => {
+          const qtyNode = ingNode.querySelector('qty');
+          const quantity = qtyNode ? parseFloat(qtyNode.textContent || '') : undefined;
+          const measurementName = ingNode.querySelector('unit')?.textContent || '';
+          const ingredientName = ingNode.querySelector('item')?.textContent || '';
+          const preparation = ingNode.querySelector('prep')?.textContent || '';
+
+          ingredients.push({
+            quantity: !isNaN(quantity as number) ? quantity : undefined,
+            measurementName,
+            ingredientName,
+            preparation
+          });
+        });
+
+        // Parse steps
+        const steps: any[] = [];
+        const stepNodes = recipeNode.querySelectorAll('step');
+        stepNodes.forEach((stepNode, index) => {
+          steps.push({
+            stepNumber: index + 1,
+            stepText: stepNode.textContent || ''
+          });
+        });
+
+        recipes.push({
+          title,
+          description,
+          servingCount,
+          isPublic: false, // Default to private when importing
+          note,
+          ingredients,
+          steps
+        });
+      });
+
+      return recipes;
+    } catch (error) {
+      console.error('Error parsing RecipeML:', error);
+      throw new Error('Invalid RecipeML format');
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+
+    setIsImporting(true);
+    setImportResults(null);
+
+    try {
+      const content = await importFile.text();
+      let recipes: any[] = [];
+
+      // Determine file type and parse
+      if (importFile.name.endsWith('.json') || importFile.name.endsWith('.jsonld')) {
+        recipes = parseJsonLd(content);
+      } else if (importFile.name.endsWith('.xml')) {
+        recipes = parseRecipeML(content);
+      } else {
+        throw new Error('Unsupported file format. Please use .json, .jsonld, or .xml files.');
+      }
+
+      // Import each recipe
+      let successCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
+
+      for (const recipe of recipes) {
+        try {
+          await recipeApi.createRecipe(recipe);
+          successCount++;
+        } catch (error: any) {
+          failedCount++;
+          const errorMsg = `Failed to import "${recipe.title}": ${error.response?.data?.message || error.message}`;
+          errors.push(errorMsg);
+          console.error(errorMsg, error);
+        }
+      }
+
+      setImportResults({
+        success: successCount,
+        failed: failedCount,
+        errors
+      });
+
+      // Reload recipes if any were successful
+      if (successCount > 0) {
+        await loadRecipes();
+      }
+    } catch (error: any) {
+      setImportResults({
+        success: 0,
+        failed: 0,
+        errors: [error.message || 'Failed to parse import file']
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleCloseImportDialog = () => {
+    setImportDialogOpen(false);
+    setImportFile(null);
+    setImportResults(null);
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -516,14 +737,23 @@ const HomePage: React.FC = () => {
             <Button variant="outlined" onClick={handleSelectAll}>
               Select All
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<ExportIcon />}
-              onClick={() => setExportDialogOpen(true)}
-              disabled={selectedRecipes.length === 0}
-            >
-              Export... ({selectedRecipes.length} selected)
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ImportIcon />}
+                onClick={() => setImportDialogOpen(true)}
+              >
+                Import...
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<ExportIcon />}
+                onClick={() => setExportDialogOpen(true)}
+                disabled={selectedRecipes.length === 0}
+              >
+                Export... ({selectedRecipes.length} selected)
+              </Button>
+            </Box>
           </Box>
         </TabPanel>
 
@@ -548,14 +778,23 @@ const HomePage: React.FC = () => {
             <Button variant="outlined" onClick={handleSelectAll}>
               Select All
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<ExportIcon />}
-              onClick={() => setExportDialogOpen(true)}
-              disabled={selectedRecipes.length === 0}
-            >
-              Export... ({selectedRecipes.length} selected)
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ImportIcon />}
+                onClick={() => setImportDialogOpen(true)}
+              >
+                Import...
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<ExportIcon />}
+                onClick={() => setExportDialogOpen(true)}
+                disabled={selectedRecipes.length === 0}
+              >
+                Export... ({selectedRecipes.length} selected)
+              </Button>
+            </Box>
           </Box>
         </TabPanel>
 
@@ -580,14 +819,23 @@ const HomePage: React.FC = () => {
             <Button variant="outlined" onClick={handleSelectAll}>
               Select All
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<ExportIcon />}
-              onClick={() => setExportDialogOpen(true)}
-              disabled={selectedRecipes.length === 0}
-            >
-              Export... ({selectedRecipes.length} selected)
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ImportIcon />}
+                onClick={() => setImportDialogOpen(true)}
+              >
+                Import...
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<ExportIcon />}
+                onClick={() => setExportDialogOpen(true)}
+                disabled={selectedRecipes.length === 0}
+              >
+                Export... ({selectedRecipes.length} selected)
+              </Button>
+            </Box>
           </Box>
         </TabPanel>
       </Paper>
@@ -627,6 +875,74 @@ const HomePage: React.FC = () => {
           <Button onClick={handleExport} variant="contained">
             Create
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onClose={handleCloseImportDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Import Recipes</DialogTitle>
+        <DialogContent>
+          {!importResults ? (
+            <>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                Select a JSON-LD (.json, .jsonld) or RecipeML (.xml) file to import recipes.
+              </Typography>
+              <Box sx={{ mt: 2 }}>
+                <input
+                  accept=".json,.jsonld,.xml"
+                  style={{ display: 'none' }}
+                  id="import-file-input"
+                  type="file"
+                  onChange={handleFileSelect}
+                />
+                <label htmlFor="import-file-input">
+                  <Button variant="outlined" component="span" fullWidth>
+                    Choose File
+                  </Button>
+                </label>
+                {importFile && (
+                  <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+                    Selected: {importFile.name}
+                  </Typography>
+                )}
+              </Box>
+            </>
+          ) : (
+            <Box>
+              <Alert severity={importResults.failed === 0 ? 'success' : importResults.success === 0 ? 'error' : 'warning'} sx={{ mb: 2 }}>
+                {importResults.success > 0 && `Successfully imported ${importResults.success} recipe(s). `}
+                {importResults.failed > 0 && `Failed to import ${importResults.failed} recipe(s).`}
+              </Alert>
+              {importResults.errors.length > 0 && (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Errors:
+                  </Typography>
+                  <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                    {importResults.errors.map((error, index) => (
+                      <Typography key={index} variant="body2" color="error" sx={{ mb: 0.5 }}>
+                        • {error}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseImportDialog}>
+            {importResults ? 'Close' : 'Cancel'}
+          </Button>
+          {!importResults && (
+            <Button
+              onClick={handleImport}
+              variant="contained"
+              disabled={!importFile || isImporting}
+            >
+              {isImporting ? <CircularProgress size={24} /> : 'Import'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Layout>
