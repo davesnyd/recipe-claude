@@ -29,14 +29,24 @@ const Layout: React.FC<LayoutProps> = ({ children, title = 'Recipe Manager' }) =
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <AppBar position="sticky">
         <Toolbar>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, cursor: 'pointer' }}
+          <Box
+            sx={{
+              flexGrow: 1,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center'
+            }}
             onClick={() => navigate('/')}
           >
-            Recipe Manager
-          </Typography>
+            <img
+              src="/logo.png"
+              alt="Recipe Manager"
+              style={{
+                height: '48px',
+                objectFit: 'contain'
+              }}
+            />
+          </Box>
           
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
