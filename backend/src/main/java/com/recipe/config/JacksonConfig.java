@@ -17,7 +17,7 @@ public class JacksonConfig {
         
         // Register Hibernate6Module to handle lazy loading and proxy objects
         Hibernate6Module hibernateModule = new Hibernate6Module();
-        hibernateModule.configure(Hibernate6Module.Feature.FORCE_LAZY_LOADING, false);
+        hibernateModule.configure(Hibernate6Module.Feature.FORCE_LAZY_LOADING, true);
         hibernateModule.configure(Hibernate6Module.Feature.USE_TRANSIENT_ANNOTATION, false);
         hibernateModule.configure(Hibernate6Module.Feature.SERIALIZE_IDENTIFIER_FOR_LAZY_NOT_LOADED_OBJECTS, true);
         

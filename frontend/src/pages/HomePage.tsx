@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import RecipeTable from '../components/RecipeTable';
 import { useAuth } from '../contexts/AuthContext';
-import { recipeApi } from '../services/api';
+import { recipeApi, importApi } from '../services/api';
 import { Recipe } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -60,6 +60,12 @@ const HomePage: React.FC = () => {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResults, setImportResults] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
+  const [bigOvenImportDialogOpen, setBigOvenImportDialogOpen] = useState(false);
+  const [bigOvenFile, setBigOvenFile] = useState<File | null>(null);
+  const [isImportingBigOven, setIsImportingBigOven] = useState(false);
+  const [bigOvenImportError, setBigOvenImportError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -130,6 +136,36 @@ const HomePage: React.FC = () => {
 
   const canEditRecipe = (recipe: Recipe) => {
     return recipe.createUsername === user?.username;
+  };
+
+  const handleDeleteClick = (recipe: Recipe) => {
+    setRecipeToDelete(recipe);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!recipeToDelete) return;
+
+    try {
+      await recipeApi.deleteRecipe(recipeToDelete.recipeId);
+
+      // Remove from all recipe lists
+      setMyRecipes(prev => prev.filter(r => r.recipeId !== recipeToDelete.recipeId));
+      setFavoriteRecipes(prev => prev.filter(r => r.recipeId !== recipeToDelete.recipeId));
+      setPublicRecipes(prev => prev.filter(r => r.recipeId !== recipeToDelete.recipeId));
+      setUserFavorites(prev => prev.filter(id => id !== recipeToDelete.recipeId));
+
+      setDeleteDialogOpen(false);
+      setRecipeToDelete(null);
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+      setError('Failed to delete recipe. Please try again.');
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setRecipeToDelete(null);
   };
 
   const getTabLabel = (label: string, count: number) => {
@@ -649,6 +685,48 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleBigOvenFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setBigOvenFile(file);
+      setBigOvenImportError(null);
+    }
+  };
+
+  const handleBigOvenImport = async () => {
+    if (!bigOvenFile) return;
+
+    setIsImportingBigOven(true);
+    setBigOvenImportError(null);
+
+    try {
+      const response = await importApi.importBigOven(bigOvenFile);
+      console.log('Import response:', response.data);
+
+      // Close dialog and navigate to the imported recipe
+      setBigOvenImportDialogOpen(false);
+      setBigOvenFile(null);
+      setIsImportingBigOven(false);
+
+      // Refresh recipe lists
+      await loadRecipes();
+
+      // Navigate to the imported recipe
+      navigate(`/recipe/${response.data.recipeId}`);
+    } catch (error: any) {
+      console.error('Error importing recipe:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to import recipe. Please try again.';
+      setBigOvenImportError(errorMessage);
+      setIsImportingBigOven(false);
+    }
+  };
+
+  const handleCloseBigOvenImportDialog = () => {
+    setBigOvenImportDialogOpen(false);
+    setBigOvenFile(null);
+    setBigOvenImportError(null);
+  };
+
   const handleCloseImportDialog = () => {
     setImportDialogOpen(false);
     setImportFile(null);
@@ -726,6 +804,7 @@ const HomePage: React.FC = () => {
             recipes={myRecipes}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
+            onDelete={handleDeleteClick}
             onToggleFavorite={handleToggleFavorite}
             userFavorites={userFavorites}
             canEdit={canEditRecipe}
@@ -738,6 +817,14 @@ const HomePage: React.FC = () => {
               Select All
             </Button>
             <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ImportIcon />}
+                onClick={() => setBigOvenImportDialogOpen(true)}
+                color="primary"
+              >
+                Import from BigOven
+              </Button>
               <Button
                 variant="outlined"
                 startIcon={<ImportIcon />}
@@ -767,6 +854,7 @@ const HomePage: React.FC = () => {
             recipes={favoriteRecipes}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
+            onDelete={handleDeleteClick}
             onToggleFavorite={handleToggleFavorite}
             userFavorites={userFavorites}
             canEdit={canEditRecipe}
@@ -779,6 +867,14 @@ const HomePage: React.FC = () => {
               Select All
             </Button>
             <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ImportIcon />}
+                onClick={() => setBigOvenImportDialogOpen(true)}
+                color="primary"
+              >
+                Import from BigOven
+              </Button>
               <Button
                 variant="outlined"
                 startIcon={<ImportIcon />}
@@ -808,6 +904,7 @@ const HomePage: React.FC = () => {
             recipes={publicRecipes}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
+            onDelete={handleDeleteClick}
             onToggleFavorite={handleToggleFavorite}
             userFavorites={userFavorites}
             canEdit={canEditRecipe}
@@ -820,6 +917,14 @@ const HomePage: React.FC = () => {
               Select All
             </Button>
             <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ImportIcon />}
+                onClick={() => setBigOvenImportDialogOpen(true)}
+                color="primary"
+              >
+                Import from BigOven
+              </Button>
               <Button
                 variant="outlined"
                 startIcon={<ImportIcon />}
@@ -943,6 +1048,75 @@ const HomePage: React.FC = () => {
               {isImporting ? <CircularProgress size={24} /> : 'Import'}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* BigOven Import Dialog */}
+      <Dialog open={bigOvenImportDialogOpen} onClose={handleCloseBigOvenImportDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Import from BigOven</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Select a BigOven HTML file (.html) to import a recipe.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            To save a recipe from BigOven: Open the recipe page in your browser, right-click, and select "Save Page As..." to download the HTML file.
+          </Typography>
+
+          {bigOvenImportError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {bigOvenImportError}
+            </Alert>
+          )}
+
+          <Box sx={{ mt: 2 }}>
+            <input
+              accept=".html,.htm"
+              style={{ display: 'none' }}
+              id="bigoven-import-file-input"
+              type="file"
+              onChange={handleBigOvenFileSelect}
+            />
+            <label htmlFor="bigoven-import-file-input">
+              <Button variant="contained" component="span" fullWidth>
+                Choose HTML File
+              </Button>
+            </label>
+            {bigOvenFile && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Selected: {bigOvenFile.name}
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseBigOvenImportDialog}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleBigOvenImport}
+            variant="contained"
+            disabled={!bigOvenFile || isImportingBigOven}
+          >
+            {isImportingBigOven ? <CircularProgress size={24} /> : 'Import Recipe'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
+        <DialogTitle>Warning! There's no going back!</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Do you want me to delete <strong>{recipeToDelete?.title}</strong>? If so, that can't be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} variant="outlined">
+            Cancel deletion
+          </Button>
+          <Button onClick={handleDeleteConfirm} variant="contained" color="error">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
     </Layout>

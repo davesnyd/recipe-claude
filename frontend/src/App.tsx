@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import RecipeViewPage from './pages/RecipeViewPage';
 import RecipeEditPage from './pages/RecipeEditPage';
+import SettingsPage from './pages/SettingsPage';
 import TestPage from './pages/TestPage';
 
 // Protected Route Component
@@ -64,6 +65,14 @@ const AppRoutes: React.FC = () => {
                 console.log('App: / route matched, rendering HomePage');
                 return <HomePage />;
               })()}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

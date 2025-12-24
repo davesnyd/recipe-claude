@@ -2,11 +2,50 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Mandatory Testing Requirements
+
+**CRITICAL**: All code changes must include comprehensive automated testing. Follow these requirements without exception:
+
+### 1. New Functionality
+When creating new functionality:
+- Create all appropriate automated tests for both backend (JUnit) and frontend (Jest/React Testing Library)
+- Tests must cover the happy path, edge cases, and error conditions
+- Run the new tests and fix any failures before considering the work complete
+
+### 2. Bug Fixes
+When fixing a bug:
+- Create tests that reproduce the bug and confirm the fix works
+- Create tests for related functionality to ensure nothing else broke
+- Tests must be written for both backend and frontend as applicable
+
+### 3. Test Execution - Immediate
+After creating or modifying code:
+- Run all automated tests for the affected functionality
+- Keep working to fix issues until all related tests pass
+- Do not consider work complete until tests are green
+
+### 4. Test Execution - Full Suite
+After getting immediate tests working:
+- Run the complete test suite for the entire application
+- Fix any failures that appear in other tests
+- Keep running and fixing until the full test suite passes
+
+### Test Commands
+```bash
+# Backend tests (run inside Docker or locally with Maven)
+docker exec recipe-backend bash -c "cd /app && mvn test"
+docker exec recipe-backend bash -c "cd /app && mvn test -Dtest=SpecificTestClass"
+
+# Frontend tests
+docker exec recipe-frontend npm test
+docker exec recipe-frontend npm test -- --testPathPattern=SpecificTest
+```
+
 ## Project Overview
 
 This is a recipe management application with three main components:
 - **Frontend**: React-based web application with OAuth Google authentication
-- **Backend**: Spring Boot Java application with REST API endpoints  
+- **Backend**: Spring Boot Java application with REST API endpoints
 - **Database**: PostgreSQL with recipe, user, ingredient, and measurement tables
 
 The application allows users to create, edit, and share recipes with nutritional information and step-by-step instructions.
@@ -23,7 +62,7 @@ The application allows users to create, edit, and share recipes with nutritional
 - **Measurements**: predefined units for Imperial/Metric systems
 
 ### Key Features
-- Three main views: "My Recipes", "Favorites", "All Recipes" 
+- Three main views: "My Recipes", "Favorites", "All Recipes"
 - Recipe search by date, user, visibility, title, description, ingredients
 - Nutritional calculation based on ingredient quantities
 - Photo upload for recipes and steps
@@ -43,7 +82,7 @@ The Spring backend should expose:
 ### Current Implementation Status
 The application is fully implemented and running via Docker Compose with:
 - Frontend: React TypeScript application on port 3000
-- Backend: Spring Boot Java application on port 8080  
+- Backend: Spring Boot Java application on port 8080
 - Database: PostgreSQL on port 5433
 
 ### Critical Data Structure Mappings
@@ -55,7 +94,7 @@ The application is fully implemented and running via Docker Compose with:
 - `recipeSteps` (List of RecipeStep objects)
 
 **Frontend TypeScript types expect:**
-- `ingredients` (Recipe interface)  
+- `ingredients` (Recipe interface)
 - `steps` (Recipe interface)
 
 **When working with recipe data display/editing, always use:**
@@ -68,6 +107,10 @@ The application is fully implemented and running via Docker Compose with:
 - Recipe has `@OneToMany` with `FetchType.EAGER` for both ingredients and steps
 - Uses `@JsonManagedReference`/`@JsonBackReference` to prevent circular JSON serialization
 - Cascade operations handle creation/deletion of child entities
+
+**Jackson Serialization:**
+- Hibernate6Module is configured with `FORCE_LAZY_LOADING = true` to properly serialize lazy-loaded entities
+- This ensures related entities (like Measurement) are fully serialized in API responses
 
 **API Request/Response Format:**
 - POST/PUT endpoints accept `Map<String, Object>` with separate `ingredients` and `steps` arrays
@@ -82,7 +125,7 @@ The application is fully implemented and running via Docker Compose with:
 
 ### Development Commands
 - **Start application**: `docker compose up -d`
-- **Rebuild frontend**: `docker compose build frontend` 
+- **Rebuild frontend**: `docker compose build frontend`
 - **Rebuild backend**: `docker compose build backend`
 - **View logs**: `docker compose logs [service]`
 - **Stop application**: `docker compose down`
@@ -110,3 +153,4 @@ The application is fully implemented and running via Docker Compose with:
 4. **Container rebuilds**: Code changes require rebuilding the specific Docker service
 5. **Database persistence**: `docker compose down` removes containers but preserves data in volumes
 6. **Security exposure**: Never commit `.env` file - use `.env.example` template instead
+7. **Skipping tests**: Never skip the testing requirements - all changes must have tests and all tests must pass

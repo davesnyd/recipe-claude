@@ -120,9 +120,23 @@ export const fileApi = {
       },
     });
   },
-  
-  delete: (filename: string) => 
+
+  delete: (filename: string) =>
     api.delete(`/files/${filename}`),
+};
+
+// Recipe Import
+export const importApi = {
+  importBigOven: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<{success: boolean, message: string, recipeId: number, title: string}>('/import/bigoven', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 30000, // 30 second timeout for import
+    });
+  },
 };
 
 export default api;

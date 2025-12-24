@@ -18,6 +18,7 @@ import {
   Edit,
   Favorite,
   FavoriteBorder,
+  Delete,
 } from '@mui/icons-material';
 import { Recipe } from '../types';
 
@@ -25,6 +26,7 @@ interface RecipeTableProps {
   recipes: Recipe[];
   onView: (recipe: Recipe) => void;
   onEdit: (recipe: Recipe) => void;
+  onDelete: (recipe: Recipe) => void;
   onToggleFavorite: (recipe: Recipe) => void;
   userFavorites: number[];
   canEdit?: (recipe: Recipe) => boolean;
@@ -37,6 +39,7 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
   recipes,
   onView,
   onEdit,
+  onDelete,
   onToggleFavorite,
   userFavorites,
   canEdit = () => true,
@@ -160,17 +163,30 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
                   </Button>
                   
                   {canEdit(recipe) && (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<Edit />}
-                      onClick={() => onEdit(recipe)}
-                      sx={{ minWidth: 'auto' }}
-                    >
-                      Edit
-                    </Button>
+                    <>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<Edit />}
+                        onClick={() => onEdit(recipe)}
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        Edit
+                      </Button>
+
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<Delete />}
+                        onClick={() => onDelete(recipe)}
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        Delete
+                      </Button>
+                    </>
                   )}
-                  
+
                   {showFavoriteButton && (
                     <Button
                       variant="outlined"
