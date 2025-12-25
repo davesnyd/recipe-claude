@@ -21,10 +21,109 @@ import {
   Delete as DeleteIcon,
   DragHandle as DragHandleIcon,
 } from '@mui/icons-material';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { recipeApi } from '../services/api';
 import { Recipe, RecipeIngredient, RecipeStep, CreateRecipeIngredient } from '../types';
+
+// Sortable wrapper component for ingredients
+interface SortableIngredientProps {
+  id: string;
+  children: React.ReactNode;
+}
+
+const SortableIngredient: React.FC<SortableIngredientProps> = ({ id, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} sx={{ mb: 2 }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <IconButton
+            {...attributes}
+            {...listeners}
+            sx={{ cursor: 'grab', '&:active': { cursor: 'grabbing' } }}
+            size="small"
+          >
+            <DragHandleIcon />
+          </IconButton>
+          {children}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Sortable wrapper component for steps
+interface SortableStepProps {
+  id: string;
+  children: React.ReactNode;
+}
+
+const SortableStep: React.FC<SortableStepProps> = ({ id, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} sx={{ mb: 2 }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+          <IconButton
+            {...attributes}
+            {...listeners}
+            sx={{ cursor: 'grab', '&:active': { cursor: 'grabbing' }, mt: 1 }}
+            size="small"
+          >
+            <DragHandleIcon />
+          </IconButton>
+          {children}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
 
 const RecipeEditPage: React.FC = () => {
   console.log('RecipeEditPage: Component started rendering');
@@ -64,6 +163,49 @@ const RecipeEditPage: React.FC = () => {
 
   // Refs for step input fields
   const stepRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Generate unique IDs for sortable items
+  const ingredientIds = ingredients.map((_, index) => `ingredient-${index}`);
+  const stepIds = steps.map((_, index) => `step-${index}`);
+
+  // Handle ingredient drag end
+  const handleIngredientDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setIngredients((items) => {
+        const oldIndex = ingredientIds.indexOf(active.id as string);
+        const newIndex = ingredientIds.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  // Handle step drag end
+  const handleStepDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setSteps((items) => {
+        const oldIndex = stepIds.indexOf(active.id as string);
+        const newIndex = stepIds.indexOf(over.id as string);
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        // Renumber steps after reorder
+        newItems.forEach((step, i) => {
+          step.stepNumber = i + 1;
+        });
+        return newItems;
+      });
+    }
+  };
 
   console.log('RecipeEditPage: State initialized, isLoading:', !isNew);
 
@@ -307,10 +449,14 @@ const RecipeEditPage: React.FC = () => {
             Ingredients
           </Typography>
 
-          {ingredients.map((ingredient, index) => (
-            <Card key={index} sx={{ mb: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleIngredientDragEnd}
+          >
+            <SortableContext items={ingredientIds} strategy={verticalListSortingStrategy}>
+              {ingredients.map((ingredient, index) => (
+                <SortableIngredient key={ingredientIds[index]} id={ingredientIds[index]}>
                   <TextField
                     type="number"
                     label="Quantity"
@@ -377,10 +523,10 @@ const RecipeEditPage: React.FC = () => {
                   >
                     <DeleteIcon />
                   </IconButton>
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
+                </SortableIngredient>
+              ))}
+            </SortableContext>
+          </DndContext>
 
           <Button
             startIcon={<AddIcon />}
@@ -396,10 +542,14 @@ const RecipeEditPage: React.FC = () => {
             Instructions
           </Typography>
 
-          {steps.map((step, index) => (
-            <Card key={index} sx={{ mb: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleStepDragEnd}
+          >
+            <SortableContext items={stepIds} strategy={verticalListSortingStrategy}>
+              {steps.map((step, index) => (
+                <SortableStep key={stepIds[index]} id={stepIds[index]}>
                   <Typography variant="h6" sx={{ mt: 1, minWidth: 30 }}>
                     {index + 1}.
                   </Typography>
@@ -425,10 +575,10 @@ const RecipeEditPage: React.FC = () => {
                   >
                     <DeleteIcon />
                   </IconButton>
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
+                </SortableStep>
+              ))}
+            </SortableContext>
+          </DndContext>
 
           <Button
             startIcon={<AddIcon />}
