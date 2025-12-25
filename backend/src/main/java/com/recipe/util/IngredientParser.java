@@ -65,8 +65,8 @@ public class IngredientParser {
     // Matches: [quantity] [fraction] [unit] [ingredient name]
     private static final Pattern INGREDIENT_PATTERN = Pattern.compile(
             "^\\s*" +                                  // Leading whitespace
-            "(?:(\\d+(?:\\.\\d+)?|\\d+/\\d+)\\s*)?" +  // Optional quantity (number or fraction)
-            "(?:(\\d+)/(\\d+)\\s*)?" +                 // Optional separate fraction
+            "(?:(\\d+/\\d+|\\d+(?:\\.\\d+)?)\\s*)?" +  // Optional quantity (fraction first, then number)
+            "(?:(\\d+)/(\\d+)\\s*)?" +                 // Optional separate fraction (for "1 1/2")
             "(?:([a-zA-Z]+)\\s+)?" +                   // Optional unit
             "(?:of\\s+)?" +                            // Optional "of"
             "(.+?)\\s*$"                               // Ingredient name (rest of string)
@@ -103,14 +103,19 @@ public class IngredientParser {
             Double quantity = parseQuantity(quantityStr, fractionNum, fractionDen);
             result.setQuantity(quantity);
 
-            // Parse unit
+            // Parse unit - only recognize known units
             if (unitStr != null && !unitStr.isEmpty()) {
-                String normalizedUnit = normalizeUnit(unitStr);
-                result.setUnit(normalizedUnit);
+                String normalizedUnit = UNIT_MAPPINGS.get(unitStr.toLowerCase());
+                if (normalizedUnit != null) {
+                    result.setUnit(normalizedUnit);
 
-                // Handle special case: stick of butter = 8 tablespoons
-                if ("stick".equalsIgnoreCase(unitStr) && quantity != null) {
-                    result.setQuantity(quantity * 8);
+                    // Handle special case: stick of butter = 8 tablespoons
+                    if ("stick".equalsIgnoreCase(unitStr) && quantity != null) {
+                        result.setQuantity(quantity * 8);
+                    }
+                } else {
+                    // Not a recognized unit - prepend it to ingredient name
+                    ingredientName = unitStr + " " + ingredientName;
                 }
             }
 

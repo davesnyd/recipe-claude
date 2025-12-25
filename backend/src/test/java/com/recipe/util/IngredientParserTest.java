@@ -83,4 +83,112 @@ class IngredientParserTest {
         assertEquals("apples", result.getIngredientName());
         assertEquals("chopped", result.getPreparation());
     }
+
+    @Test
+    void testParseFraction() {
+        ParsedIngredient result = parser.parse("1/2 cup milk");
+
+        assertNotNull(result);
+        assertEquals(0.5, result.getQuantity(), 0.01);
+        assertEquals("cup", result.getUnit());
+        assertEquals("milk", result.getIngredientName());
+    }
+
+    @Test
+    void testParseCups() {
+        ParsedIngredient result = parser.parse("2 cups flour");
+
+        assertNotNull(result);
+        assertEquals(2.0, result.getQuantity());
+        assertEquals("cup", result.getUnit());
+        assertEquals("flour", result.getIngredientName());
+    }
+
+    @Test
+    void testParsePounds() {
+        ParsedIngredient result = parser.parse("1 lb ground beef");
+
+        assertNotNull(result);
+        assertEquals(1.0, result.getQuantity());
+        assertEquals("pound", result.getUnit());
+        assertEquals("ground beef", result.getIngredientName());
+    }
+
+    @Test
+    void testParseGrams() {
+        ParsedIngredient result = parser.parse("100 g sugar");
+
+        assertNotNull(result);
+        assertEquals(100.0, result.getQuantity());
+        assertEquals("gram", result.getUnit());
+        assertEquals("sugar", result.getIngredientName());
+    }
+
+    @Test
+    void testParseNullInput() {
+        ParsedIngredient result = parser.parse(null);
+        assertNull(result);
+    }
+
+    @Test
+    void testParseEmptyInput() {
+        ParsedIngredient result = parser.parse("");
+        assertNull(result);
+    }
+
+    @Test
+    void testParseWhitespaceOnly() {
+        ParsedIngredient result = parser.parse("   ");
+        assertNull(result);
+    }
+
+    @Test
+    void testParseDecimalQuantity() {
+        ParsedIngredient result = parser.parse("1.5 cups water");
+
+        assertNotNull(result);
+        assertEquals(1.5, result.getQuantity());
+        assertEquals("cup", result.getUnit());
+        assertEquals("water", result.getIngredientName());
+    }
+
+    @Test
+    void testParseMultiWordIngredient() {
+        ParsedIngredient result = parser.parse("2 cups all-purpose flour");
+
+        assertNotNull(result);
+        assertEquals(2.0, result.getQuantity());
+        assertEquals("cup", result.getUnit());
+        assertEquals("all-purpose flour", result.getIngredientName());
+    }
+
+    @Test
+    void testParseWithComplexPreparation() {
+        ParsedIngredient result = parser.parse("1 cup onion, finely chopped");
+
+        assertNotNull(result);
+        assertEquals(1.0, result.getQuantity());
+        assertEquals("cup", result.getUnit());
+        assertEquals("onion", result.getIngredientName());
+        assertEquals("finely chopped", result.getPreparation());
+    }
+
+    @Test
+    void testParseMilliliters() {
+        ParsedIngredient result = parser.parse("250 ml cream");
+
+        assertNotNull(result);
+        assertEquals(250.0, result.getQuantity());
+        assertEquals("milliliter", result.getUnit());
+        assertEquals("cream", result.getIngredientName());
+    }
+
+    @Test
+    void testOriginalTextPreserved() {
+        String originalText = "2 TBSP lemon juice";
+        ParsedIngredient result = parser.parse(originalText);
+
+        assertNotNull(result);
+        assertEquals(originalText, result.getOriginalText());
+    }
 }
