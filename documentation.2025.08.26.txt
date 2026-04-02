@@ -1,0 +1,235 @@
+> Create a new directory called "documentation". In it, create design documents and code level documents to allow people to understand how the codebase 
+  works and work with it.
+
+● Update Todos
+  ⎿  ☐ Create documentation directory structure
+     ☐ Write system architecture document
+     ☐ Create database schema documentation
+     ☐ Document API endpoints
+     ☐ Write frontend component guide
+     ☐ Create development workflow guide
+
+● Update Todos
+  ⎿  ☐ Create documentation directory structure
+     ☐ Write system architecture document
+     ☐ Create database schema documentation
+     ☐ Document API endpoints
+     ☐ Write frontend component guide
+     ☐ Create development workflow guide
+
+● Bash(cd "/home/dms/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002" && mkdir -p
+      documentation/{architecture,database,api,frontend,devel…)
+  ⎿  (No content)
+
+● Update Todos
+  ⎿  ☒ Create documentation directory structure
+     ☐ Write system architecture document
+     ☐ Create database schema documentation
+     ☐ Document API endpoints
+     ☐ Write frontend component guide
+     ☐ Create development workflow guide
+
+● Now let me create comprehensive documentation. First, the system architecture document:
+
+● Write(documentation/architecture/system-overview.md)
+  ⎿  Wrote 143 lines to documentation/architecture/system-overview.md            
+     # System Architecture Overview
+     ## High-Level Architecture
+     The Recipe Management Application follows a three-tier architecture pattern:
+     ```
+     ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+     │   Frontend      │    │    Backend      │    │    Database     │
+     │   (React)       │◄───┤  (Spring Boot)  │◄───┤  (PostgreSQL)   │
+     … +133 lines (ctrl+r to expand)
+
+● Update Todos
+  ⎿  ☒ Create documentation directory structure
+     ☒ Write system architecture document
+     ☐ Create database schema documentation
+     ☐ Document API endpoints
+     ☐ Write frontend component guide
+     ☐ Create development workflow guide
+
+● Now let me check the database schema to document it properly:
+
+● Read(database/init.sql)
+  ⎿  Read 115 lines (ctrl+r to expand)
+
+● Write(documentation/database/schema.md)
+  ⎿  Wrote 195 lines to documentation/database/schema.md                                                          
+     # Database Schema Documentation
+     ## Overview
+     The Recipe Management Application uses PostgreSQL as its primary database. The schema is designed to support:
+     - User management with Google OAuth integration
+     - Recipe creation, editing, and sharing
+     - Ingredient management with nutritional information
+     - Flexible measurement system (Imperial/Metric)
+     - Recipe favoriting system
+     … +185 lines (ctrl+r to expand)
+
+● Update Todos
+  ⎿  ☒ Create documentation directory structure
+     ☒ Write system architecture document
+     ☒ Create database schema documentation
+     ☐ Document API endpoints
+     ☐ Write frontend component guide
+     ☐ Create development workflow guide
+
+● Now let me document the API endpoints by examining the controller:
+
+● Write(documentation/api/endpoints.md)
+  ⎿  Wrote 316 lines to documentation/api/endpoints.md                                
+     # API Endpoints Documentation
+     ## Base URL
+     All API endpoints are prefixed with `/api` (configured in `application.yml`)
+     **Development**: `http://localhost:8080/api`
+     ## Authentication
+     All endpoints except login require a valid JWT token in the Authorization header:
+     … +306 lines (ctrl+r to expand)
+
+● Update Todos
+  ⎿  ☒ Create documentation directory structure
+     ☒ Write system architecture document
+     ☒ Create database schema documentation
+     ☒ Document API endpoints
+     ☐ Write frontend component guide
+     ☐ Create development workflow guide
+
+● Now let me examine the frontend structure to document the components:
+
+● Bash(cd "/home/dms/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002/frontend/src" && find . -name "*.tsx" -o -name "*.ts" |
+       grep -v node…)
+  ⎿  ./App.test.tsx                    
+     ./App.tsx
+     ./components/GoogleLoginButton.tsx
+     … +15 lines (ctrl+r to expand)
+     
+● Write(~/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002/documentation/frontend/components.md)
+  ⎿  Wrote 343 lines to ../../documentation/frontend/components.md                               
+     # Frontend Component Guide
+     ## Architecture Overview
+     The frontend is built with React TypeScript and follows a component-based architecture with:
+     - **Pages**: Top-level route components
+     - **Components**: Reusable UI components
+     - **Contexts**: Global state management
+     - **Services**: API communication layer
+     - **Types**: TypeScript interfaces
+     … +333 lines (ctrl+r to expand)
+
+● Update Todos
+  ⎿  ☒ Create documentation directory structure
+     ☒ Write system architecture document
+     ☒ Create database schema documentation
+     ☒ Document API endpoints
+     ☒ Write frontend component guide
+     ☐ Create development workflow guide
+
+● Finally, let me create the development workflow guide:
+  
+
+● Write(~/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002/documentation/development/workflow.md)
+  ⎿  Wrote 337 lines to ../../documentation/development/workflow.md
+     # Development Workflow Guide
+     ## Getting Started
+     ### Prerequisites
+     - Docker and Docker Compose
+     - Git
+     - Text editor/IDE (VS Code recommended)
+     - Google Cloud Console account (for OAuth credentials)
+     … +327 lines (ctrl+r to expand)
+
+● Update Todos
+  ⎿  ☒ Create documentation directory structure
+     ☒ Write system architecture document
+     ☒ Create database schema documentation
+     ☒ Document API endpoints
+     ☒ Write frontend component guide
+     ☒ Create development workflow guide
+
+● Now let me create a master documentation index to tie everything together:
+
+● Write(~/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002/documentation/README.md)
+  ⎿  Wrote 114 lines to ../../documentation/README.md                                                                                            
+     # Recipe Management Application - Documentation
+     This directory contains comprehensive documentation for understanding and working with the Recipe Management Application codebase.
+     ## 📚 Documentation Index
+     ### 🏗️ Architecture & Design
+     - **[System Overview](architecture/system-overview.md)** - High-level architecture, technology stack, data flow, and security considerations
+     - **[Database Schema](database/schema.md)** - Complete database design, entity relationships, and business rules
+     … +104 lines (ctrl+r to expand)
+
+● Let me also update the main README to reference the documentation:
+
+● Update(~/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002/README.md)
+  ⎿  Updated ../../README.md with 14 additions and 1 removal                                                                  
+       69    - All sensitive configuration is stored in environment variables
+       70    - Google OAuth credentials are required for authentication
+       71    - JWT secret should be a secure random string in production
+       72 -  - Database credentials should be changed from defaults in production
+       72   \ No newline at end of file
+       73 +  - Database credentials should be changed from defaults in production
+       74 +  
+       75 +  ## Documentation
+       76 +  
+       77 +  Comprehensive documentation is available in the `documentation/` directory:
+       78 +  
+       79 +  - **[📚 Documentation Index](documentation/README.md)** - Complete documentation overview
+       80 +  - **[🏗️ System Architecture](documentation/architecture/system-overview.md)** - Technical architecture and design
+       81 +  - **[🗄️ Database Schema](documentation/database/schema.md)** - Data model and relationships  
+       82 +  - **[🔌 API Reference](documentation/api/endpoints.md)** - REST API documentation
+       83 +  - **[🎨 Frontend Guide](documentation/frontend/components.md)** - React component architecture
+       84 +  - **[🛠️ Development Workflow](documentation/development/workflow.md)** - Setup and daily development
+       85 +  
+       86 +  For developers working with this codebase, start with the [Documentation Index](documentation/README.md).
+       87   \ No newline at end of file
+
+● Perfect! Let me show you the final structure of what I've created:
+
+● Bash(cd "/home/dms/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002" && tree documentation/)
+  ⎿  Error: /bin/bash: line 1: tree: command not found
+
+● Bash(cd "/home/dms/Insync/davesnyd@gmail.com/Google Drive/Documents/development/recipe/recipe002" && find documentation/ -type f | sort)
+  ⎿  documentation/api/endpoints.md               
+     documentation/architecture/system-overview.md
+     documentation/database/schema.md
+     … +3 lines (ctrl+r to expand)
+
+● Documentation Complete! 📚
+
+  I've created a comprehensive documentation structure for your Recipe Management Application:
+
+  📁 Documentation Structure Created:
+
+  documentation/
+  ├── README.md                     # Master documentation index
+  ├── architecture/
+  │   └── system-overview.md        # System architecture & design
+  ├── database/
+  │   └── schema.md                 # Database schema & relationships
+  ├── api/
+  │   └── endpoints.md              # Complete REST API reference
+  ├── frontend/
+  │   └── components.md             # React component guide
+  └── development/
+      └── workflow.md               # Development workflows & best practices
+
+  🎯 What Each Document Contains:
+
+  1. System Overview - Architecture diagrams, technology stack, authentication flow, security considerations
+  2. Database Schema - Complete ERD, table definitions, indexes, business rules
+  3. API Endpoints - All REST endpoints with request/response examples, error handling
+  4. Frontend Components - React architecture, component structure, state management patterns
+  5. Development Workflow - Setup, daily workflows, debugging, deployment, troubleshooting
+  6. Documentation Index - Navigation hub with quick start guides
+
+  🔑 Key Benefits:
+
+  - New Developer Onboarding - Clear setup instructions and architecture understanding
+  - Code Understanding - Detailed explanations of design decisions and patterns
+  - API Reference - Complete endpoint documentation with examples
+  - Troubleshooting - Common issues and solutions documented
+  - Best Practices - Development standards and workflows established
+
+  The documentation is now linked from your main README.md and provides everything needed for developers to understand and work with your codebase
+  effectively!
+

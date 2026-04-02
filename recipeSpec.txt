@@ -1,0 +1,111 @@
+Build a recipe application using React, Spring Java, and PostgreSQL.
+
+It will use PostgreSQL as its database back end.
+Each user will have a user name (used for authentication against Google), a user ID, and a unit of measurement preference for "Imperial" or "Metric".
+The user of measurement table will have columns for "Imperial/Metric", "Meaurement Name", and "Measurement Type" (either weight or volume). The measurement table will be prepopulated for Metric with gram (weight), miligram (weight), kilogram (weight), mililiter (volume), and liter (volume). For Imperial, it will be prepopulated with ounce (weight), pound (weight), teaspoon (volume), tablespoon (volume), ounce (volume), cup (volume), pint (volume), quart (volume), and gallon (volume).
+Each recipe will have: an IsPublic boolean, a creation date, a create username, a recipe ID, a title, a description, a serving count, a photo (can be empty), a note (can be empty), a list of recipe-ingredients with an ingredient and a quantity and a unit of measurement, and a list of steps.
+Each ingredient has a density, an amount of calories, an amount of protein, an amount of fat, an amount of carbohydrates, an amount of dietary fiber, and an amount of sodium.
+Each step will have text and an optional photo.
+Each user will be able to mark recipes as favorites. There will be a table for "favorites" with two columns: user and recipe ID
+If a user creates a recipe, they can mark it as public or private.
+There will also be a table that links users and favorite recipes
+
+For the back end, create a Spring based application using Java and Maven.
+It should expose the following end points: 
+Search for recipes using creation date, creation user name, IsPublic, title, description, notes, ingredients. Searches will only return recipes that the current user is allowed to view: ones they created plus recipes that are marked "IsPublic". 
+Retrieve photo for a recipe.
+Retrieve photo for a step.
+Add recipe.
+Edit recipe.
+Mark recipe as favorite.
+Add ingredient, with nutritional information
+
+For the front end, create a React application that consumes the Spring application and provides a web based interface to it.
+The primary color scheme will be based on maroon and cream color shades.
+The user will log in using OAuth connected to Google as the authentication source.
+When they log in, there will be a table with three tabs "My recipes" and "Favorites" and "All Recipes".
+The "My recipes" tab will contain recipes the user created.
+The "Favorites" tab will contain recipes they have marked as a favorite which are public.
+The "All Recipes" tab will contain all public recipes.
+If there are no recipes in a tab, it will be greyed out and not selectable.
+Each tab will contain a table of recipes. The table will contain resizable columns for: Title, Description, Buttons. The "Buttons" column will not have a title. IN the Buttons column will be rectangular buttons with rounded corners for "View" and "Edit" and "Favorite". When a user pushes "View", they will see a non-editable view of the recipe. When the user pushes "Edit", they will see an editable view of the recipe. When the user pushes the "Favorite" button, an entry will be created in the favorites table connecting the user name with the recipe ID.
+At the bottom of the page will be an "Add Recipe" button. It will display a blank "Edit" page.
+The View page will display; from top to bottom: Title (if there is a connection between the username and the recipe ID; then there will be an image with a check mark and the word "Favorite" next to it will appear after the title); photo; description; serving count and a "Favorite" button (if there is a connection between the username and the recipe ID in the favorites table, its text will be "Unmark Favorite", otherwise, it will be "Mark Favorite"); note; and a list of ingredients in a table with the columns: quantity; units of measurement; ingredient. The ingredient will link to the ingredient table. Then; there will be a table of steps with two columns: Step number and step. At the bottom will be a table of nutrition with one line each for: calories; protein; fat; carbohydrates; fiber; and sodium. They will be populated with a sum of each value from each ingredient. If the "Mark Favorite" button is pushed, it's text will change to "Unmark Favorite"; an image with a check mark and the word "Favorite" next to it will appear after the title; and an entry linking the user and the recipe will be created in the "Favorite" table.
+The edit page will have; from top to bottom: an editable text box containing the title; an editable text box containing the description; an editable text box that only allows the user to enter an integer for serving count; if there is currently a photo in the recipe table, then the photo will be displayed with a button that allows the user to "Replace Photo", otherwise the button will read "Add Photo"; a text box for note; a table of ingredients with one line for each ingredient in the recipe; and a table of steps with one line for each step. The ingredient table will have a drop down for the unit of measurement, a text box that only allow the user to enter a floating point value for quantity, a button to delete, and the ability to drag and drop it elsewhere in the table to rearrange. The user of measurement dropdown will only contain users of measurement relevant to the user measurement preference in the user table.  Each line in the table of steps will have an editable text box and the ability to drag and reop it elsewhere in the table to rearrange.  There will be a "Save" button at the bottom of the page that will cause the system to add or update the recipe and other records in the database.
+
+Based on all the issues we debugged, here are the key prompts to add to your specification to avoid these problems in future implementations:
+
+  Frontend Architecture Notes
+
+  Routing Configuration
+
+  - Use specific routes before general ones: /recipe/new should come before /recipe/:id in route definitions
+  - For new recipe creation, use static route /recipe/new and detect this in components with window.location.pathname === '/recipe/new' rather than
+  relying on URL parameters
+  - When using useParams(), always handle the case where parameters might be undefined for static routes
+
+  API Configuration
+
+  - Always configure axios with timeouts (e.g., timeout: 10000) to prevent hanging requests
+  - Add request interceptors for authentication tokens but ensure they don't cause circular dependencies
+
+  Authentication Context
+
+  - AuthContext should handle cases where no token exists in localStorage gracefully
+  - Add comprehensive error handling for authentication API calls with proper fallbacks
+  - Ensure isLoading state is always set to false in both success and error cases to prevent infinite loading
+
+  Component Loading States
+
+  - Components that make API calls on mount should handle loading states properly
+  - Disable API calls during development/testing by temporarily commenting them out and setting isLoading to false
+  - Always verify that loading spinners can be dismissed - avoid infinite loading states
+
+  Backend Architecture Notes
+
+  JSON Serialization
+
+  - Add @JsonIgnore annotations to break circular references in JPA entity relationships:
+    - User entity: @JsonIgnore on recipes and favorites collections
+    - Recipe entity: @JsonIgnore on recipeIngredients, recipeSteps, and favorites collections
+    - RecipeIngredient, RecipeStep, Favorite entities: @JsonIgnore on recipe reference
+  - This prevents JSON serialization from hanging due to circular object graphs
+
+  JWT Configuration
+
+  - Use sufficiently long JWT secret keys (minimum 512 bits for HS512 algorithm)
+  - Example: myVerySecureSecretKeyForHS512AlgorithmThatIsLongEnoughToMeetTheRequirementsOfAtLeast512BitsForSecurityPurposes123456789
+
+  Docker Configuration
+
+  - Check for port conflicts - if PostgreSQL port 5432 is in use, map to different external port like 5433:5432
+  - Pass React environment variables as build arguments in Docker Compose and Dockerfile
+  - Use docker compose (no hyphen) command syntax
+
+  Error Handling
+
+  - Java: Avoid multi-catch blocks with exception inheritance hierarchies (e.g., don't catch both MalformedURLException and IOException since the former
+  extends the latter)
+  - Always implement timeout handling for database connections and API calls
+
+  Development/Debugging Notes
+
+  Testing Strategy
+
+  - Create simple test pages/routes to isolate component loading issues
+  - Add comprehensive console logging during development to trace execution flow
+  - Test button clicks with alerts before implementing complex navigation
+  - Verify each layer works independently (routing → authentication → component loading → API calls)
+
+  Google OAuth Setup
+
+  - Ensure Google OAuth client ID is properly configured for localhost:3000
+  - Handle cross-origin policy warnings (these are normal for OAuth but shouldn't break functionality)
+
+  This comprehensive set of guidelines should help avoid the specific routing, authentication, serialization, and configuration issues we encountered.
+
+
+
+
+
+
