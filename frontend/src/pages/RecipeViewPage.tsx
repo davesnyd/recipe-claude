@@ -24,6 +24,10 @@ import {
   FormControlLabel,
   Radio,
   TextField,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -54,6 +58,7 @@ const RecipeViewPage: React.FC = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'recipeml' | 'jsonld'>('pdf');
   const [exportFilename, setExportFilename] = useState('recipe.pdf');
+  const [pdfFontSize, setPdfFontSize] = useState<'small' | 'medium' | 'large'>('small');
 
   useEffect(() => {
     if (id) {
@@ -109,15 +114,17 @@ const RecipeViewPage: React.FC = () => {
   const handleCreatePDF = () => {
     if (!recipe) return;
 
+    const scale = pdfFontSize === 'large' ? 2.0 : pdfFontSize === 'medium' ? 1.4 : 1.0;
+
     const doc = new jsPDF();
 
     // Title
-    doc.setFontSize(20);
+    doc.setFontSize(20 * scale);
     doc.setFont('helvetica', 'bold');
     doc.text(recipe.title, 15, 20);
 
     // Metadata
-    doc.setFontSize(10);
+    doc.setFontSize(10 * scale);
     doc.setFont('helvetica', 'normal');
     const pdfDate = recipe.creationDate ? new Date(recipe.creationDate) : null;
     const pdfDateStr = pdfDate && !isNaN(pdfDate.getTime()) ? ` • Created ${pdfDate.toLocaleDateString()}` : '';
@@ -126,7 +133,7 @@ const RecipeViewPage: React.FC = () => {
 
     // Description
     if (recipe.description) {
-      doc.setFontSize(11);
+      doc.setFontSize(11 * scale);
       const splitDescription = doc.splitTextToSize(recipe.description, 180);
       doc.text(splitDescription, 15, 42);
     }
@@ -134,7 +141,7 @@ const RecipeViewPage: React.FC = () => {
     let yPosition = recipe.description ? 42 + (doc.splitTextToSize(recipe.description, 180).length * 5) + 10 : 45;
 
     // Ingredients
-    doc.setFontSize(14);
+    doc.setFontSize(14 * scale);
     doc.setFont('helvetica', 'bold');
     doc.text('Ingredients', 15, yPosition);
     yPosition += 8;
@@ -153,14 +160,14 @@ const RecipeViewPage: React.FC = () => {
       head: [],
       body: ingredientsData,
       theme: 'plain',
-      styles: { fontSize: 10 },
+      styles: { fontSize: 10 * scale },
       margin: { left: 15 },
     });
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;
 
     // Instructions
-    doc.setFontSize(14);
+    doc.setFontSize(14 * scale);
     doc.setFont('helvetica', 'bold');
     doc.text('Instructions', 15, yPosition);
     yPosition += 8;
@@ -175,7 +182,7 @@ const RecipeViewPage: React.FC = () => {
       head: [],
       body: stepsData,
       theme: 'plain',
-      styles: { fontSize: 10 },
+      styles: { fontSize: 10 * scale },
       columnStyles: {
         0: { cellWidth: 15, fontStyle: 'bold' },
         1: { cellWidth: 'auto' }
@@ -186,12 +193,12 @@ const RecipeViewPage: React.FC = () => {
     // Notes
     if (recipe.note) {
       yPosition = (doc as any).lastAutoTable.finalY + 10;
-      doc.setFontSize(14);
+      doc.setFontSize(14 * scale);
       doc.setFont('helvetica', 'bold');
       doc.text('Notes', 15, yPosition);
       yPosition += 8;
 
-      doc.setFontSize(10);
+      doc.setFontSize(10 * scale);
       doc.setFont('helvetica', 'normal');
       const splitNotes = doc.splitTextToSize(recipe.note, 180);
       doc.text(splitNotes, 15, yPosition);
@@ -629,6 +636,21 @@ const RecipeViewPage: React.FC = () => {
               sx={{ mt: 2 }}
               inputProps={{ 'aria-label': 'Filename' }}
             />
+            {exportFormat === 'pdf' && (
+              <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                <InputLabel id="pdf-font-size-label">Font size</InputLabel>
+                <Select
+                  labelId="pdf-font-size-label"
+                  label="Font size"
+                  value={pdfFontSize}
+                  onChange={(e) => setPdfFontSize(e.target.value as 'small' | 'medium' | 'large')}
+                >
+                  <MenuItem value="small">Small</MenuItem>
+                  <MenuItem value="medium">Medium</MenuItem>
+                  <MenuItem value="large">Large</MenuItem>
+                </Select>
+              </FormControl>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setExportDialogOpen(false)}>

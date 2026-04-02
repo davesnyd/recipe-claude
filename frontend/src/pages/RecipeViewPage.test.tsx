@@ -160,4 +160,37 @@ describe('RecipeViewPage', () => {
       expect(filenameField).toHaveValue('my_recipe.xml');
     });
   });
+
+  describe('PDF font size', () => {
+    it('shows a font size selector in the export dialog', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: /export/i }));
+      await waitFor(() => expect(screen.getByLabelText(/font size/i)).toBeInTheDocument());
+    });
+
+    it('defaults to Small font size', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: /export/i }));
+      await waitFor(() => {
+        expect(screen.getByLabelText(/font size/i)).toBeInTheDocument();
+      });
+      // MUI Select shows the selected option as visible text
+      expect(screen.getByText('Small')).toBeInTheDocument();
+    });
+
+    it('font size selector includes Small, Medium, Large options', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: /export/i }));
+      await waitFor(() => screen.getByLabelText(/font size/i));
+      fireEvent.mouseDown(screen.getByLabelText(/font size/i));
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'Small' })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: 'Medium' })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: 'Large' })).toBeInTheDocument();
+      });
+    });
+  });
 });

@@ -16,6 +16,10 @@ import {
   FormControlLabel,
   Radio,
   TextField,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
 } from '@mui/material';
 import { Add as AddIcon, FileDownload as ExportIcon, FileUpload as ImportIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -60,6 +64,7 @@ const HomePage: React.FC = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'recipeml' | 'jsonld'>('pdf');
   const [exportFilename, setExportFilename] = useState('recipes.pdf');
+  const [pdfFontSize, setPdfFontSize] = useState<'small' | 'medium' | 'large'>('small');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -86,6 +91,8 @@ const HomePage: React.FC = () => {
       return {};
     }
   });
+
+  const [pageSize, setPageSize] = useState<number>(20);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -259,6 +266,7 @@ const HomePage: React.FC = () => {
     const recipes = await getSelectedRecipeData();
     if (recipes.length === 0) return;
 
+    const scale = pdfFontSize === 'large' ? 2.0 : pdfFontSize === 'medium' ? 1.4 : 1.0;
     const doc = new jsPDF();
     let isFirstRecipe = true;
 
@@ -269,12 +277,12 @@ const HomePage: React.FC = () => {
       isFirstRecipe = false;
 
       // Title
-      doc.setFontSize(18);
+      doc.setFontSize(18 * scale);
       doc.setFont('helvetica', 'bold');
       doc.text(recipe.title, 15, 20);
 
       // Metadata
-      doc.setFontSize(10);
+      doc.setFontSize(10 * scale);
       doc.setFont('helvetica', 'normal');
       doc.text(`By ${recipe.createUsername} • Serves ${recipe.servingCount}`, 15, 28);
 
@@ -282,14 +290,14 @@ const HomePage: React.FC = () => {
 
       // Description
       if (recipe.description) {
-        doc.setFontSize(10);
+        doc.setFontSize(10 * scale);
         const splitDescription = doc.splitTextToSize(recipe.description, 180);
         doc.text(splitDescription, 15, yPosition);
         yPosition += splitDescription.length * 5 + 5;
       }
 
       // Ingredients
-      doc.setFontSize(12);
+      doc.setFontSize(12 * scale);
       doc.setFont('helvetica', 'bold');
       doc.text('Ingredients', 15, yPosition);
       yPosition += 6;
@@ -307,14 +315,14 @@ const HomePage: React.FC = () => {
         startY: yPosition,
         body: ingredientsData,
         theme: 'plain',
-        styles: { fontSize: 9 },
+        styles: { fontSize: 9 * scale },
         margin: { left: 15 },
       });
 
       yPosition = (doc as any).lastAutoTable.finalY + 8;
 
       // Instructions
-      doc.setFontSize(12);
+      doc.setFontSize(12 * scale);
       doc.setFont('helvetica', 'bold');
       doc.text('Instructions', 15, yPosition);
       yPosition += 6;
@@ -328,7 +336,7 @@ const HomePage: React.FC = () => {
         startY: yPosition,
         body: stepsData,
         theme: 'plain',
-        styles: { fontSize: 9 },
+        styles: { fontSize: 9 * scale },
         columnStyles: {
           0: { cellWidth: 12, fontStyle: 'bold' },
           1: { cellWidth: 'auto' }
@@ -343,11 +351,11 @@ const HomePage: React.FC = () => {
           doc.addPage();
           yPosition = 20;
         }
-        doc.setFontSize(12);
+        doc.setFontSize(12 * scale);
         doc.setFont('helvetica', 'bold');
         doc.text('Notes', 15, yPosition);
         yPosition += 6;
-        doc.setFontSize(9);
+        doc.setFontSize(9 * scale);
         doc.setFont('helvetica', 'normal');
         const splitNotes = doc.splitTextToSize(recipe.note, 180);
         doc.text(splitNotes, 15, yPosition);
@@ -800,6 +808,22 @@ const HomePage: React.FC = () => {
       </Box>
 
       <Paper elevation={1}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: 2, pt: 1 }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel id="page-size-label">Rows per page</InputLabel>
+            <Select
+              labelId="page-size-label"
+              label="Rows per page"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
             value={activeTab}
@@ -832,7 +856,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(myRecipes, sortKeys, sortDirs)}
+            recipes={sortRecipes(myRecipes, sortKeys, sortDirs).slice(0, pageSize)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -885,7 +909,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(favoriteRecipes, sortKeys, sortDirs)}
+            recipes={sortRecipes(favoriteRecipes, sortKeys, sortDirs).slice(0, pageSize)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -938,7 +962,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(publicRecipes, sortKeys, sortDirs)}
+            recipes={sortRecipes(publicRecipes, sortKeys, sortDirs).slice(0, pageSize)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -1025,6 +1049,21 @@ const HomePage: React.FC = () => {
             sx={{ mt: 2 }}
             inputProps={{ 'aria-label': 'Filename' }}
           />
+          {exportFormat === 'pdf' && (
+            <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+              <InputLabel id="pdf-font-size-label">Font size</InputLabel>
+              <Select
+                labelId="pdf-font-size-label"
+                label="Font size"
+                value={pdfFontSize}
+                onChange={(e) => setPdfFontSize(e.target.value as 'small' | 'medium' | 'large')}
+              >
+                <MenuItem value="small">Small</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="large">Large</MenuItem>
+              </Select>
+            </FormControl>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setExportDialogOpen(false)}>

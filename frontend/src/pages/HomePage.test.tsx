@@ -72,6 +72,27 @@ const renderPage = () =>
     </MemoryRouter>
   );
 
+describe('HomePage page size', () => {
+  it('renders a page size selector', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+    expect(screen.getByLabelText(/rows per page/i)).toBeInTheDocument();
+  });
+
+  it('page size selector includes options 10, 20, 50, 100', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+    const selector = screen.getByLabelText(/rows per page/i);
+    fireEvent.mouseDown(selector);
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: '10' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: '20' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: '50' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: '100' })).toBeInTheDocument();
+    });
+  });
+});
+
 describe('HomePage sort persistence', () => {
   it('saves sort key to sessionStorage when sorting', async () => {
     renderPage();

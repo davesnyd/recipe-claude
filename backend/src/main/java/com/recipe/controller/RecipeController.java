@@ -60,6 +60,11 @@ public class RecipeController {
             recipeMap.put("creationDate", recipe.getCreationDate());
             recipeMap.put("photoUrl", recipe.getPhotoUrl());
             recipeMap.put("note", recipe.getNote());
+            recipeMap.put("category", recipe.getCategory());
+            recipeMap.put("cuisine", recipe.getCuisine());
+            recipeMap.put("holiday", recipe.getHoliday());
+            recipeMap.put("course", recipe.getCourse());
+            recipeMap.put("type", recipe.getType());
             
             // Add ingredients
             List<Map<String, Object>> ingredientsList = new ArrayList<>();
