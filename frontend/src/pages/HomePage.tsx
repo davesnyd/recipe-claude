@@ -68,7 +68,7 @@ const HomePage: React.FC = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [importResults, setImportResults] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
+  const [importResults, setImportResults] = useState<{ success: number; failed: number; skipped: number; errors: string[] } | null>(null);
   const [bigOvenImportDialogOpen, setBigOvenImportDialogOpen] = useState(false);
   const [bigOvenFile, setBigOvenFile] = useState<File | null>(null);
   const [isImportingBigOven, setIsImportingBigOven] = useState(false);
@@ -689,12 +689,20 @@ const HomePage: React.FC = () => {
       // Import each recipe
       let successCount = 0;
       let failedCount = 0;
+      let skippedCount = 0;
       const errors: string[] = [];
 
+      const existingTitles = new Set(myRecipes.map(r => r.title.toLowerCase()));
+
       for (const recipe of recipes) {
+        if (existingTitles.has(recipe.title?.toLowerCase())) {
+          skippedCount++;
+          continue;
+        }
         try {
           await recipeApi.createRecipe(recipe);
           successCount++;
+          existingTitles.add(recipe.title?.toLowerCase());
         } catch (error: any) {
           failedCount++;
           const errorMsg = `Failed to import "${recipe.title}": ${error.response?.data?.message || error.message}`;
@@ -706,6 +714,7 @@ const HomePage: React.FC = () => {
       setImportResults({
         success: successCount,
         failed: failedCount,
+        skipped: skippedCount,
         errors
       });
 
@@ -717,6 +726,7 @@ const HomePage: React.FC = () => {
       setImportResults({
         success: 0,
         failed: 0,
+        skipped: 0,
         errors: [error.message || 'Failed to parse import file']
       });
     } finally {
@@ -1108,6 +1118,7 @@ const HomePage: React.FC = () => {
             <Box>
               <Alert severity={importResults.failed === 0 ? 'success' : importResults.success === 0 ? 'error' : 'warning'} sx={{ mb: 2 }}>
                 {importResults.success > 0 && `Successfully imported ${importResults.success} recipe(s). `}
+                {importResults.skipped > 0 && `Skipped ${importResults.skipped} duplicate(s). `}
                 {importResults.failed > 0 && `Failed to import ${importResults.failed} recipe(s).`}
               </Alert>
               {importResults.errors.length > 0 && (

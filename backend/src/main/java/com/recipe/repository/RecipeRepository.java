@@ -12,6 +12,8 @@ import java.util.List;
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
     
     List<Recipe> findByCreateUsername(String username);
+
+    boolean existsByTitleIgnoreCaseAndCreateUsername(String title, String username);
     
     List<Recipe> findByIsPublicTrue();
     

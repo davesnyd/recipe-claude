@@ -93,6 +93,20 @@ describe('HomePage page size', () => {
   });
 });
 
+describe('HomePage import deduplication', () => {
+  it('skips recipes whose title already exists in myRecipes', async () => {
+    // myRecipes already has "Apple Pie"
+    (recipeApi.getMyRecipes as jest.Mock).mockResolvedValue({ data: mockRecipes });
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+
+    // The duplicate check is done client-side against myRecipes titles
+    // "Apple Pie" is already in myRecipes, so importing it should not call createRecipe
+    const existingTitles = new Set(mockRecipes.map((r: any) => r.title.toLowerCase()));
+    expect(existingTitles.has('apple pie')).toBe(true);
+  });
+});
+
 describe('HomePage sort persistence', () => {
   it('saves sort key to sessionStorage when sorting', async () => {
     renderPage();

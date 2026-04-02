@@ -57,6 +57,12 @@ public class RecipeImportService {
 
         logger.info("Extracted recipe: {}", bigOvenRecipe.getName());
 
+        // 1b. Check for duplicate — skip if user already has a recipe with this title
+        if (recipeRepository.existsByTitleIgnoreCaseAndCreateUsername(bigOvenRecipe.getName(), username)) {
+            throw new IllegalArgumentException(
+                "Recipe \"" + bigOvenRecipe.getName() + "\" already exists in your collection");
+        }
+
         // 2. Create Recipe entity
         Recipe recipe = new Recipe();
         recipe.setTitle(bigOvenRecipe.getName());
