@@ -497,7 +497,7 @@ const RecipeEditPage: React.FC = () => {
                 onChange={(e) => handleRecipeChange('course', e.target.value)}
               >
                 <MenuItem value=""><em>None</em></MenuItem>
-                {['breakfast', 'soup', 'salad', 'appetizer', 'dessert', 'side dish', 'vegetable', 'main'].map(c => (
+                {['breakfast', 'soup', 'salad', 'appetizer', 'bread', 'dessert', 'side dish', 'vegetable', 'main'].map(c => (
                   <MenuItem key={c} value={c}>{c}</MenuItem>
                 ))}
               </Select>

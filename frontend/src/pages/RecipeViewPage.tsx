@@ -52,8 +52,8 @@ const RecipeViewPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'recipeml' | 'jsonld'>('recipeml');
-  const [exportFilename, setExportFilename] = useState('recipe.xml');
+  const [exportFormat, setExportFormat] = useState<'pdf' | 'recipeml' | 'jsonld'>('pdf');
+  const [exportFilename, setExportFilename] = useState('recipe.pdf');
 
   useEffect(() => {
     if (id) {
@@ -197,9 +197,7 @@ const RecipeViewPage: React.FC = () => {
       doc.text(splitNotes, 15, yPosition);
     }
 
-    // Save with recipe title as filename
-    const filename = `${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
-    doc.save(filename);
+    doc.save(exportFilename);
   };
 
   const handleExportRecipeML = () => {
@@ -382,7 +380,9 @@ const RecipeViewPage: React.FC = () => {
   const handleExport = () => {
     console.log('handleExport: Starting export, format:', exportFormat);
     try {
-      if (exportFormat === 'recipeml') {
+      if (exportFormat === 'pdf') {
+        handleCreatePDF();
+      } else if (exportFormat === 'recipeml') {
         handleExportRecipeML();
       } else {
         handleExportJsonLd();
@@ -573,13 +573,6 @@ const RecipeViewPage: React.FC = () => {
             </Button>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button
-                variant="contained"
-                startIcon={<PdfIcon />}
-                onClick={handleCreatePDF}
-              >
-                Create PDF
-              </Button>
-              <Button
                 variant="outlined"
                 startIcon={<ExportIcon />}
                 onClick={() => setExportDialogOpen(true)}
@@ -606,11 +599,17 @@ const RecipeViewPage: React.FC = () => {
             <RadioGroup
               value={exportFormat}
               onChange={(e) => {
-                const fmt = e.target.value as 'recipeml' | 'jsonld';
+                const fmt = e.target.value as 'pdf' | 'recipeml' | 'jsonld';
                 setExportFormat(fmt);
-                setExportFilename(fmt === 'jsonld' ? 'recipe.json' : 'recipe.xml');
+                const ext = fmt === 'pdf' ? 'pdf' : fmt === 'recipeml' ? 'xml' : 'json';
+                setExportFilename(`recipe.${ext}`);
               }}
             >
+              <FormControlLabel
+                value="pdf"
+                control={<Radio />}
+                label="PDF (Portable Document Format)"
+              />
               <FormControlLabel
                 value="recipeml"
                 control={<Radio />}

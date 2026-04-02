@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -215,6 +216,25 @@ public class JacksonConfigTest {
             "JSON should contain Imperial system. Actual JSON: " + json);
         assertTrue(json.contains("\"system\":\"Metric\""),
             "JSON should contain Metric system. Actual JSON: " + json);
+    }
+
+    @Test
+    void testCreationDateSerializedAsIsoString() throws JsonProcessingException {
+        Recipe recipe = new Recipe();
+        recipe.setRecipeId(1L);
+        recipe.setTitle("Date Test Recipe");
+        recipe.setServingCount(2);
+        recipe.setIsPublic(true);
+        recipe.setCreateUsername("chef@example.com");
+        recipe.setCreationDate(LocalDateTime.of(2024, 1, 15, 10, 30, 0));
+
+        String json = objectMapper.writeValueAsString(recipe);
+
+        // creationDate must be an ISO-8601 string, not a numeric array like [2024,1,15,10,30,0]
+        assertFalse(json.contains("\"creationDate\":["),
+            "creationDate must not be serialized as a numeric array. Actual JSON: " + json);
+        assertTrue(json.contains("\"creationDate\":\"2024-01-15"),
+            "creationDate should be an ISO-8601 string. Actual JSON: " + json);
     }
 
     @Test

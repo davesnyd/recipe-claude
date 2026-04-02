@@ -104,11 +104,27 @@ describe('RecipeViewPage', () => {
       await waitFor(() => expect(screen.getByLabelText(/filename/i)).toBeInTheDocument());
     });
 
-    it('defaults filename to recipe.xml for RecipeML format', async () => {
+    it('defaults filename to recipe.pdf (PDF is default format)', async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
 
       fireEvent.click(screen.getByRole('button', { name: /export/i }));
+
+      await waitFor(() => {
+        const filenameField = screen.getByLabelText(/filename/i);
+        expect(filenameField).toHaveValue('recipe.pdf');
+      });
+    });
+
+    it('defaults filename to recipe.xml when RecipeML is selected', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /export/i }));
+
+      await waitFor(() => screen.getByLabelText(/filename/i));
+
+      fireEvent.click(screen.getByLabelText(/recipeml/i));
 
       await waitFor(() => {
         const filenameField = screen.getByLabelText(/filename/i);

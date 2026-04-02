@@ -14,12 +14,12 @@ import {
   Checkbox,
 } from '@mui/material';
 import {
-  Visibility,
   Edit,
   Favorite,
   FavoriteBorder,
   Delete,
   ArrowUpward,
+  ArrowDownward,
 } from '@mui/icons-material';
 import { Recipe } from '../types';
 
@@ -35,6 +35,7 @@ interface RecipeTableProps {
   selectedRecipes?: number[];
   onSelectRecipe?: (recipeId: number) => void;
   sortKeys?: string[];
+  sortDirs?: Record<string, 'asc' | 'desc'>;
   onSort?: (key: string) => void;
 }
 
@@ -50,6 +51,7 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
   selectedRecipes = [],
   onSelectRecipe,
   sortKeys = [],
+  sortDirs = {},
   onSort,
 }) => {
   const isFavorite = (recipeId: number) => userFavorites.includes(recipeId);
@@ -58,13 +60,15 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
   const SortButton: React.FC<{ sortKey: string; label: string }> = ({ sortKey, label }) => {
     if (!onSort) return <span>{label}</span>;
     const isActive = sortKeys[0] === sortKey;
+    const isDesc = isActive && sortDirs[sortKey] === 'desc';
+    const SortIcon = isDesc ? ArrowDownward : ArrowUpward;
     return (
       <Button
         size="small"
         aria-label={`Sort by ${label}`}
         aria-pressed={isActive}
         onClick={() => onSort(sortKey)}
-        endIcon={isActive ? <ArrowUpward fontSize="small" /> : undefined}
+        endIcon={isActive ? <SortIcon fontSize="small" /> : undefined}
         sx={{ color: 'primary.contrastText', textTransform: 'none', fontWeight: 'bold', p: 0, minWidth: 0 }}
       >
         {label}
@@ -82,6 +86,8 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
     );
   }
 
+  const resizableTh = { color: 'primary.contrastText', fontWeight: 'bold', resize: 'horizontal', overflow: 'hidden' };
+
   return (
     <TableContainer component={Paper} elevation={2}>
       <Table>
@@ -92,28 +98,25 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
                 Select
               </TableCell>
             )}
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
+            <TableCell sx={resizableTh}>
               <SortButton sortKey="title" label="Title" />
             </TableCell>
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
+            <TableCell sx={resizableTh}>
               Description
             </TableCell>
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
-              Servings
-            </TableCell>
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
+            <TableCell sx={resizableTh}>
               <SortButton sortKey="creationDate" label="Date" />
             </TableCell>
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
+            <TableCell sx={resizableTh}>
               <SortButton sortKey="createUsername" label="User" />
             </TableCell>
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
+            <TableCell sx={resizableTh}>
               Visibility
             </TableCell>
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
+            <TableCell sx={resizableTh}>
               <SortButton sortKey="category" label="Category" />
             </TableCell>
-            <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
+            <TableCell sx={resizableTh}>
               <SortButton sortKey="course" label="Course" />
             </TableCell>
             <TableCell sx={{ color: 'primary.contrastText', fontWeight: 'bold' }}>
@@ -126,7 +129,8 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
             <TableRow
               key={recipe.recipeId}
               hover
-              sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
+              onClick={() => onView(recipe)}
+              sx={{ cursor: 'pointer', '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
             >
               {onSelectRecipe && (
                 <TableCell>
@@ -172,12 +176,6 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
               
               <TableCell>
                 <Typography variant="body2">
-                  {recipe.servingCount}
-                </Typography>
-              </TableCell>
-              
-              <TableCell>
-                <Typography variant="body2">
                   {recipe.creationDate ? new Date(recipe.creationDate).toLocaleDateString() : ''}
                 </Typography>
               </TableCell>
@@ -204,16 +202,6 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
 
               <TableCell>
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<Visibility />}
-                    onClick={() => onView(recipe)}
-                    sx={{ minWidth: 'auto' }}
-                  >
-                    View
-                  </Button>
-                  
                   {canEdit(recipe) && (
                     <>
                       <Button

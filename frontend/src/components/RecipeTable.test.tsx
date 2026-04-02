@@ -68,19 +68,6 @@ describe('RecipeTable', () => {
     expect(screen.getByText('Classic homemade banana bread')).toBeInTheDocument();
   });
 
-  it('renders serving counts', () => {
-    render(
-      <RecipeTable
-        recipes={mockRecipes}
-        userFavorites={[]}
-        {...mockHandlers}
-      />
-    );
-
-    expect(screen.getByText('8')).toBeInTheDocument();
-    expect(screen.getByText('6')).toBeInTheDocument();
-  });
-
   it('renders public/private visibility chips', () => {
     render(
       <RecipeTable
@@ -94,20 +81,6 @@ describe('RecipeTable', () => {
     expect(screen.getByText('Private')).toBeInTheDocument();
   });
 
-  it('calls onView when View button is clicked', () => {
-    render(
-      <RecipeTable
-        recipes={mockRecipes}
-        userFavorites={[]}
-        {...mockHandlers}
-      />
-    );
-
-    const viewButtons = screen.getAllByRole('button', { name: /view/i });
-    fireEvent.click(viewButtons[0]);
-
-    expect(mockHandlers.onView).toHaveBeenCalledWith(mockRecipes[0]);
-  });
 
   it('calls onEdit when Edit button is clicked', () => {
     render(
@@ -216,7 +189,7 @@ describe('RecipeTable', () => {
 
     expect(screen.getByText('Title')).toBeInTheDocument();
     expect(screen.getByText('Description')).toBeInTheDocument();
-    expect(screen.getByText('Servings')).toBeInTheDocument();
+    expect(screen.queryByText('Servings')).not.toBeInTheDocument();
     expect(screen.getByText('Visibility')).toBeInTheDocument();
     expect(screen.getByText('Actions')).toBeInTheDocument();
   });
@@ -323,10 +296,64 @@ describe('RecipeTable', () => {
       render(
         <RecipeTable recipes={mockRecipes} userFavorites={[]} sortKeys={['title']} onSort={jest.fn()} {...mockHandlers} />
       );
-      // The title sort button should indicate it is the active sort
       const titleSortBtn = screen.getByRole('button', { name: /sort by title/i });
       expect(titleSortBtn).toHaveAttribute('aria-pressed', 'true');
     });
+
+    it('shows descending arrow when sortDirs is desc for active column', () => {
+      render(
+        <RecipeTable
+          recipes={mockRecipes}
+          userFavorites={[]}
+          sortKeys={['title']}
+          sortDirs={{ title: 'desc' }}
+          onSort={jest.fn()}
+          {...mockHandlers}
+        />
+      );
+      expect(screen.getByTestId('ArrowDownwardIcon')).toBeInTheDocument();
+    });
+
+    it('shows ascending arrow when sortDirs is asc for active column', () => {
+      render(
+        <RecipeTable
+          recipes={mockRecipes}
+          userFavorites={[]}
+          sortKeys={['title']}
+          sortDirs={{ title: 'asc' }}
+          onSort={jest.fn()}
+          {...mockHandlers}
+        />
+      );
+      expect(screen.getByTestId('ArrowUpwardIcon')).toBeInTheDocument();
+    });
+  });
+
+  it('calls onView when a table row is clicked', () => {
+    render(
+      <RecipeTable
+        recipes={mockRecipes}
+        userFavorites={[]}
+        {...mockHandlers}
+      />
+    );
+
+    const rows = screen.getAllByRole('row');
+    // rows[0] is the header row, rows[1] is the first data row
+    fireEvent.click(rows[1]);
+    expect(mockHandlers.onView).toHaveBeenCalledWith(mockRecipes[0]);
+  });
+
+  it('does not render a View button', () => {
+    render(
+      <RecipeTable
+        recipes={mockRecipes}
+        userFavorites={[]}
+        {...mockHandlers}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /^view$/i })).not.toBeInTheDocument();
   });
 
   it('shows checkbox as checked for selected recipes', () => {

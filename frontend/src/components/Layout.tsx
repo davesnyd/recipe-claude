@@ -76,7 +76,12 @@ const Layout: React.FC<LayoutProps> = ({ children, title = 'Recipe Manager' }) =
 
       <Container maxWidth={false} sx={{ width: '80%', py: 3 }}>
         {title && (
-          <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            onClick={() => navigate('/')}
+            sx={{ mb: 3, cursor: 'pointer' }}
+          >
             {title}
           </Typography>
         )}

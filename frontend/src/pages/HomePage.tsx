@@ -15,6 +15,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  TextField,
 } from '@mui/material';
 import { Add as AddIcon, FileDownload as ExportIcon, FileUpload as ImportIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { recipeApi, importApi } from '../services/api';
 import { Recipe } from '../types';
 import { getMeasurementDisplay } from '../utils/ingredientUtils';
-import { sortRecipes, applySort } from '../utils/sortUtils';
+import { sortRecipes, applySort, applyDir } from '../utils/sortUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -58,6 +59,7 @@ const HomePage: React.FC = () => {
   const [selectedRecipes, setSelectedRecipes] = useState<number[]>([]);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'recipeml' | 'jsonld'>('pdf');
+  const [exportFilename, setExportFilename] = useState('recipes.pdf');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -68,7 +70,22 @@ const HomePage: React.FC = () => {
   const [bigOvenImportError, setBigOvenImportError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
-  const [sortKeys, setSortKeys] = useState<string[]>([]);
+  const [sortKeys, setSortKeys] = useState<string[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('recipe_sortKeys');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [sortDirs, setSortDirs] = useState<Record<string, 'asc' | 'desc'>>(() => {
+    try {
+      const saved = sessionStorage.getItem('recipe_sortDirs');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -105,7 +122,12 @@ const HomePage: React.FC = () => {
   };
 
   const handleSort = (key: string) => {
-    setSortKeys(prev => applySort(prev, key));
+    const newDirs = applyDir(sortDirs, sortKeys, key);
+    const newKeys = applySort(sortKeys, key);
+    setSortDirs(newDirs);
+    setSortKeys(newKeys);
+    sessionStorage.setItem('recipe_sortKeys', JSON.stringify(newKeys));
+    sessionStorage.setItem('recipe_sortDirs', JSON.stringify(newDirs));
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -332,7 +354,7 @@ const HomePage: React.FC = () => {
       }
     });
 
-    doc.save('recipes.pdf');
+    doc.save(exportFilename);
   };
 
   const handleExportRecipeML = async () => {
@@ -401,7 +423,7 @@ const HomePage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'recipes.xml';
+    link.download = exportFilename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -459,7 +481,7 @@ const HomePage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'recipes.jsonld';
+    link.download = exportFilename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -810,7 +832,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(myRecipes, sortKeys)}
+            recipes={sortRecipes(myRecipes, sortKeys, sortDirs)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -821,6 +843,7 @@ const HomePage: React.FC = () => {
             selectedRecipes={selectedRecipes}
             onSelectRecipe={handleSelectRecipe}
             sortKeys={sortKeys}
+            sortDirs={sortDirs}
             onSort={handleSort}
           />
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
@@ -862,7 +885,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(favoriteRecipes, sortKeys)}
+            recipes={sortRecipes(favoriteRecipes, sortKeys, sortDirs)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -873,6 +896,7 @@ const HomePage: React.FC = () => {
             selectedRecipes={selectedRecipes}
             onSelectRecipe={handleSelectRecipe}
             sortKeys={sortKeys}
+            sortDirs={sortDirs}
             onSort={handleSort}
           />
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
@@ -914,7 +938,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(publicRecipes, sortKeys)}
+            recipes={sortRecipes(publicRecipes, sortKeys, sortDirs)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -925,6 +949,7 @@ const HomePage: React.FC = () => {
             selectedRecipes={selectedRecipes}
             onSelectRecipe={handleSelectRecipe}
             sortKeys={sortKeys}
+            sortDirs={sortDirs}
             onSort={handleSort}
           />
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
@@ -969,7 +994,12 @@ const HomePage: React.FC = () => {
           </Typography>
           <RadioGroup
             value={exportFormat}
-            onChange={(e) => setExportFormat(e.target.value as 'pdf' | 'recipeml' | 'jsonld')}
+            onChange={(e) => {
+              const fmt = e.target.value as 'pdf' | 'recipeml' | 'jsonld';
+              setExportFormat(fmt);
+              const ext = fmt === 'pdf' ? 'pdf' : fmt === 'recipeml' ? 'xml' : 'json';
+              setExportFilename(`recipes.${ext}`);
+            }}
           >
             <FormControlLabel
               value="pdf"
@@ -987,6 +1017,14 @@ const HomePage: React.FC = () => {
               label="JSON-LD (schema.org format)"
             />
           </RadioGroup>
+          <TextField
+            label="Filename"
+            value={exportFilename}
+            onChange={(e) => setExportFilename(e.target.value)}
+            fullWidth
+            sx={{ mt: 2 }}
+            inputProps={{ 'aria-label': 'Filename' }}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setExportDialogOpen(false)}>

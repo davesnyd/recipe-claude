@@ -398,6 +398,15 @@ describe('RecipeEditPage', () => {
       expect(screen.getByLabelText(/Course/i)).toBeInTheDocument();
     });
 
+    it('includes "bread" in the Course dropdown options', async () => {
+      renderWithRouter(<RecipeEditPage />, { route: '/recipe/new' });
+      const courseSelect = screen.getByLabelText(/Course/i);
+      fireEvent.mouseDown(courseSelect);
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'bread' })).toBeInTheDocument();
+      });
+    });
+
     it('renders Type checkboxes', () => {
       renderWithRouter(<RecipeEditPage />, { route: '/recipe/new' });
       expect(screen.getByText('vegetarian')).toBeInTheDocument();
