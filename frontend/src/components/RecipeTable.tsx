@@ -129,7 +129,10 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
             <TableRow
               key={recipe.recipeId}
               hover
-              onClick={() => onView(recipe)}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('button, input[type="checkbox"]')) return;
+                onView(recipe);
+              }}
               sx={{ cursor: 'pointer', '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
             >
               {onSelectRecipe && (
