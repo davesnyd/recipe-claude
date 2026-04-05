@@ -1,4 +1,4 @@
-import { slugify, getIsoDate, saveFileWithPicker } from './exportUtils';
+import { slugify, getIsoDate, acquireSaveFileHandle, writeToFileHandle, saveFileWithPicker } from './exportUtils';
 
 describe('slugify', () => {
   it('lowercases and replaces spaces with dashes', () => {
@@ -28,62 +28,115 @@ describe('getIsoDate', () => {
   });
 });
 
-describe('saveFileWithPicker', () => {
-  const originalShowSaveFilePicker = (window as any).showSaveFilePicker;
-
+describe('acquireSaveFileHandle', () => {
   afterEach(() => {
-    if (originalShowSaveFilePicker === undefined) {
-      delete (window as any).showSaveFilePicker;
-    } else {
-      (window as any).showSaveFilePicker = originalShowSaveFilePicker;
-    }
+    delete (window as any).showSaveFilePicker;
     jest.restoreAllMocks();
   });
 
-  it('falls back to anchor download when showSaveFilePicker is not available', async () => {
+  it('returns null when showSaveFilePicker is not available', async () => {
     delete (window as any).showSaveFilePicker;
+    const result = await acquireSaveFileHandle('test.pdf');
+    expect(result).toBeNull();
+  });
 
+  it('returns a file handle when picker is available and user confirms', async () => {
+    const mockHandle = { createWritable: jest.fn() };
+    (window as any).showSaveFilePicker = jest.fn().mockResolvedValue(mockHandle);
+
+    const result = await acquireSaveFileHandle('recipe.pdf');
+    expect(result).toBe(mockHandle);
+    expect((window as any).showSaveFilePicker).toHaveBeenCalledWith(
+      expect.objectContaining({ suggestedName: 'recipe.pdf' })
+    );
+  });
+
+  it('returns undefined when user cancels', async () => {
+    (window as any).showSaveFilePicker = jest.fn().mockRejectedValue(
+      new DOMException('User cancelled', 'AbortError')
+    );
+    const result = await acquireSaveFileHandle('recipe.pdf');
+    expect(result).toBeUndefined();
+  });
+
+  it('throws for non-AbortError failures', async () => {
+    (window as any).showSaveFilePicker = jest.fn().mockRejectedValue(
+      new Error('Unexpected error')
+    );
+    await expect(acquireSaveFileHandle('recipe.pdf')).rejects.toThrow('Unexpected error');
+  });
+});
+
+describe('writeToFileHandle', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('does nothing when handle is undefined (user cancelled)', async () => {
+    const blob = new Blob(['test']);
+    await expect(writeToFileHandle(undefined, blob, 'test.pdf')).resolves.toBeUndefined();
+  });
+
+  it('writes to handle when a valid handle is provided', async () => {
+    const writeMock = jest.fn();
+    const closeMock = jest.fn();
+    const handle = { createWritable: jest.fn().mockResolvedValue({ write: writeMock, close: closeMock }) };
+
+    const blob = new Blob(['content'], { type: 'application/pdf' });
+    await writeToFileHandle(handle, blob, 'recipe.pdf');
+
+    expect(writeMock).toHaveBeenCalledWith(blob);
+    expect(closeMock).toHaveBeenCalled();
+  });
+
+  it('falls back to anchor download when handle is null', async () => {
     const createObjectURL = jest.fn(() => 'blob:mock-url');
     const revokeObjectURL = jest.fn();
-    Object.defineProperty(window, 'URL', {
-      writable: true,
-      value: { createObjectURL, revokeObjectURL },
-    });
+    Object.defineProperty(window, 'URL', { writable: true, value: { createObjectURL, revokeObjectURL } });
 
     const clickMock = jest.fn();
-    const appendChildMock = jest.spyOn(document.body, 'appendChild').mockImplementation(() => document.body);
-    const removeChildMock = jest.spyOn(document.body, 'removeChild').mockImplementation(() => document.body);
+    jest.spyOn(document.body, 'appendChild').mockImplementation(() => document.body);
+    jest.spyOn(document.body, 'removeChild').mockImplementation(() => document.body);
     jest.spyOn(document, 'createElement').mockReturnValue({ click: clickMock, href: '', download: '' } as any);
 
-    const blob = new Blob(['test'], { type: 'text/plain' });
-    await saveFileWithPicker(blob, 'test.xml');
+    const blob = new Blob(['test'], { type: 'application/xml' });
+    await writeToFileHandle(null, blob, 'recipes.xml');
 
     expect(clickMock).toHaveBeenCalled();
-    appendChildMock.mockRestore();
-    removeChildMock.mockRestore();
+  });
+});
+
+describe('saveFileWithPicker', () => {
+  afterEach(() => {
+    delete (window as any).showSaveFilePicker;
+    jest.restoreAllMocks();
   });
 
   it('uses showSaveFilePicker when available', async () => {
     const writeMock = jest.fn();
     const closeMock = jest.fn();
-    const createWritableMock = jest.fn().mockResolvedValue({ write: writeMock, close: closeMock });
-    (window as any).showSaveFilePicker = jest.fn().mockResolvedValue({ createWritable: createWritableMock });
+    (window as any).showSaveFilePicker = jest.fn().mockResolvedValue({
+      createWritable: jest.fn().mockResolvedValue({ write: writeMock, close: closeMock }),
+    });
 
-    const blob = new Blob(['test'], { type: 'application/pdf' });
-    await saveFileWithPicker(blob, 'recipe.pdf');
+    await saveFileWithPicker(new Blob(['pdf']), 'recipe.pdf');
 
-    expect((window as any).showSaveFilePicker).toHaveBeenCalledWith(
-      expect.objectContaining({ suggestedName: 'recipe.pdf' })
-    );
-    expect(writeMock).toHaveBeenCalledWith(blob);
+    expect(writeMock).toHaveBeenCalled();
     expect(closeMock).toHaveBeenCalled();
   });
 
-  it('silently ignores AbortError when user cancels picker', async () => {
-    const abortError = new DOMException('User cancelled', 'AbortError');
-    (window as any).showSaveFilePicker = jest.fn().mockRejectedValue(abortError);
+  it('falls back to anchor download when picker is unavailable', async () => {
+    delete (window as any).showSaveFilePicker;
+    const clickMock = jest.fn();
+    jest.spyOn(document.body, 'appendChild').mockImplementation(() => document.body);
+    jest.spyOn(document.body, 'removeChild').mockImplementation(() => document.body);
+    jest.spyOn(document, 'createElement').mockReturnValue({ click: clickMock, href: '', download: '' } as any);
+    Object.defineProperty(window, 'URL', {
+      writable: true,
+      value: { createObjectURL: jest.fn(() => 'blob:url'), revokeObjectURL: jest.fn() },
+    });
 
-    const blob = new Blob(['test'], { type: 'application/pdf' });
-    await expect(saveFileWithPicker(blob, 'recipe.pdf')).resolves.toBeUndefined();
+    await saveFileWithPicker(new Blob(['xml']), 'recipes.xml');
+    expect(clickMock).toHaveBeenCalled();
   });
 });

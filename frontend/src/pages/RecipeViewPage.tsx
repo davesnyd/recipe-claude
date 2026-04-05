@@ -45,7 +45,7 @@ import { Recipe } from '../types';
 import { getMeasurementDisplay } from '../utils/ingredientUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { slugify, saveFileWithPicker } from '../utils/exportUtils';
+import { slugify, acquireSaveFileHandle, writeToFileHandle } from '../utils/exportUtils';
 
 const RecipeViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -113,8 +113,8 @@ const RecipeViewPage: React.FC = () => {
       .replace(/'/g, '&apos;');
   };
 
-  const handleCreatePDF = async () => {
-    if (!recipe) return;
+  const generatePDFBlob = async (): Promise<Blob | null> => {
+    if (!recipe) return null;
 
     const scale = pdfFontSize === 'large' ? 2.0 : pdfFontSize === 'medium' ? 1.4 : 1.0;
 
@@ -206,11 +206,10 @@ const RecipeViewPage: React.FC = () => {
       doc.text(splitNotes, 15, yPosition);
     }
 
-    const pdfBlob = doc.output('blob');
-    await saveFileWithPicker(pdfBlob, exportFilename);
+    return doc.output('blob') as Blob;
   };
 
-  const handleExportRecipeML = async () => {
+  const generateRecipeMLBlob = async (): Promise<Blob | null> => {
     console.log('handleExportRecipeML: Starting RecipeML export');
     if (!recipe) {
       console.error('handleExportRecipeML: No recipe data available');
@@ -286,10 +285,8 @@ const RecipeViewPage: React.FC = () => {
 
       console.log('handleExportRecipeML: Generated XML:', xml.substring(0, 200) + '...');
 
-      const blob = new Blob([xml], { type: 'application/xml' });
-      console.log('handleExportRecipeML: Downloading file:', exportFilename);
-      await saveFileWithPicker(blob, exportFilename);
-      console.log('handleExportRecipeML: Export completed successfully');
+      console.log('generateRecipeMLBlob: Generated XML, returning blob');
+      return new Blob([xml], { type: 'application/xml' });
     } catch (error) {
       console.error('handleExportRecipeML: Error during export:', error);
       alert(`Error exporting RecipeML: ${error}`);
@@ -297,7 +294,7 @@ const RecipeViewPage: React.FC = () => {
     }
   };
 
-  const handleExportJsonLd = async () => {
+  const generateJsonLdBlob = async (): Promise<Blob | null> => {
     console.log('handleExportJsonLd: Starting JSON-LD export');
     if (!recipe) {
       console.error('handleExportJsonLd: No recipe data available');
@@ -356,10 +353,8 @@ const RecipeViewPage: React.FC = () => {
       console.log('handleExportJsonLd: Generated JSON-LD:', jsonLd);
 
       const json = JSON.stringify(jsonLd, null, 2);
-      const blob = new Blob([json], { type: 'application/ld+json' });
-      console.log('handleExportJsonLd: Downloading file:', exportFilename);
-      await saveFileWithPicker(blob, exportFilename);
-      console.log('handleExportJsonLd: Export completed successfully');
+      console.log('generateJsonLdBlob: Returning blob');
+      return new Blob([json], { type: 'application/ld+json' });
     } catch (error) {
       console.error('handleExportJsonLd: Error during export:', error);
       alert(`Error exporting JSON-LD: ${error}`);
@@ -368,21 +363,27 @@ const RecipeViewPage: React.FC = () => {
   };
 
   const handleExport = async () => {
-    console.log('handleExport: Starting export, format:', exportFormat);
+    // Acquire the file handle FIRST while the user-gesture activation is valid.
+    const handle = await acquireSaveFileHandle(exportFilename);
+    if (handle === undefined) {
+      setExportDialogOpen(false);
+      return; // user cancelled the picker
+    }
+
     try {
+      let blob: Blob | null = null;
       if (exportFormat === 'pdf') {
-        await handleCreatePDF();
+        blob = await generatePDFBlob();
       } else if (exportFormat === 'recipeml') {
-        await handleExportRecipeML();
+        blob = await generateRecipeMLBlob();
       } else {
-        await handleExportJsonLd();
+        blob = await generateJsonLdBlob();
       }
-      console.log('handleExport: Export completed, closing dialog');
+      if (blob) await writeToFileHandle(handle, blob, exportFilename);
     } catch (error) {
       console.error('handleExport: Error during export:', error);
     } finally {
       setExportDialogOpen(false);
-      console.log('handleExport: Dialog closed');
     }
   };
 

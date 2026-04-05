@@ -32,7 +32,7 @@ import { getMeasurementDisplay } from '../utils/ingredientUtils';
 import { sortRecipes, applySort, applyDir } from '../utils/sortUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { slugify, getIsoDate, saveFileWithPicker } from '../utils/exportUtils';
+import { slugify, getIsoDate, acquireSaveFileHandle, writeToFileHandle } from '../utils/exportUtils';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -263,7 +263,7 @@ const HomePage: React.FC = () => {
       .replace(/'/g, '&apos;');
   };
 
-  const handleExportPDF = async () => {
+  const generatePDFBlob = async (): Promise<Blob> => {
     const recipes = await getSelectedRecipeData();
     if (recipes.length === 0) return;
 
@@ -363,11 +363,10 @@ const HomePage: React.FC = () => {
       }
     });
 
-    const pdfBlob = doc.output('blob');
-    await saveFileWithPicker(pdfBlob, exportFilename);
+    return doc.output('blob') as Blob;
   };
 
-  const handleExportRecipeML = async () => {
+  const generateRecipeMLBlob = async (): Promise<Blob> => {
     const recipes = await getSelectedRecipeData();
     if (recipes.length === 0) return;
 
@@ -429,13 +428,12 @@ const HomePage: React.FC = () => {
 
     xml += '</recipeml>';
 
-    const blob = new Blob([xml], { type: 'application/xml' });
-    await saveFileWithPicker(blob, exportFilename);
+    return new Blob([xml], { type: 'application/xml' });
   };
 
-  const handleExportJsonLd = async () => {
+  const generateJsonLdBlob = async (): Promise<Blob> => {
     const recipes = await getSelectedRecipeData();
-    if (recipes.length === 0) return;
+    if (recipes.length === 0) return new Blob([], { type: 'application/ld+json' });
 
     const jsonLdArray = recipes.map(recipe => {
       let datePublished = '';
@@ -480,19 +478,29 @@ const HomePage: React.FC = () => {
     });
 
     const json = JSON.stringify(jsonLdArray, null, 2);
-    const blob = new Blob([json], { type: 'application/ld+json' });
-    await saveFileWithPicker(blob, exportFilename);
+    return new Blob([json], { type: 'application/ld+json' });
   };
 
   const handleExport = async () => {
+    // Acquire the file handle FIRST while the user-gesture activation is still
+    // valid. Any await before this call (e.g. network requests) would cause
+    // showSaveFilePicker to be rejected by the browser.
+    const handle = await acquireSaveFileHandle(exportFilename);
+    if (handle === undefined) {
+      setExportDialogOpen(false);
+      return; // user cancelled the picker
+    }
+
     try {
+      let blob: Blob;
       if (exportFormat === 'pdf') {
-        await handleExportPDF();
+        blob = await generatePDFBlob();
       } else if (exportFormat === 'recipeml') {
-        await handleExportRecipeML();
+        blob = await generateRecipeMLBlob();
       } else {
-        await handleExportJsonLd();
+        blob = await generateJsonLdBlob();
       }
+      await writeToFileHandle(handle, blob, exportFilename);
     } catch (error) {
       console.error('Error exporting recipes:', error);
       alert(`Error exporting recipes: ${error}`);
