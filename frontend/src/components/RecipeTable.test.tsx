@@ -371,4 +371,36 @@ describe('RecipeTable', () => {
     expect(checkboxes[0]).toBeChecked();
     expect(checkboxes[1]).not.toBeChecked();
   });
+
+  it('clicking Edit does not also trigger onView', () => {
+    render(
+      <RecipeTable
+        recipes={mockRecipes}
+        userFavorites={[]}
+        {...mockHandlers}
+      />
+    );
+
+    const editButtons = screen.getAllByRole('button', { name: /edit/i });
+    fireEvent.click(editButtons[0]);
+
+    expect(mockHandlers.onEdit).toHaveBeenCalledWith(mockRecipes[0]);
+    expect(mockHandlers.onView).not.toHaveBeenCalled();
+  });
+
+  it('clicking Delete does not also trigger onView', () => {
+    render(
+      <RecipeTable
+        recipes={mockRecipes}
+        userFavorites={[]}
+        {...mockHandlers}
+      />
+    );
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    fireEvent.click(deleteButtons[0]);
+
+    expect(mockHandlers.onDelete).toHaveBeenCalledWith(mockRecipes[0]);
+    expect(mockHandlers.onView).not.toHaveBeenCalled();
+  });
 });

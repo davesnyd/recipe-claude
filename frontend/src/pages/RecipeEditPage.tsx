@@ -240,7 +240,7 @@ const RecipeEditPage: React.FC = () => {
       setServingCountInput(String(recipeData.servingCount || 1));
       const formattedIngredients = (recipeData as any).recipeIngredients?.map((ing: any) => ({
         ingredientName: ing.ingredientName || ing.ingredient?.name || '',
-        quantity: ing.quantity,
+        quantity: ing.quantity != null ? String(ing.quantity) : '',
         measurementName: ing.measurementName || ing.measurement?.measurementName || '',
         preparation: ing.preparation || ''
       })) || [{ quantity: undefined, ingredientName: '', measurementName: '', preparation: '' }];

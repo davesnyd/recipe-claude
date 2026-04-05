@@ -171,9 +171,7 @@ public class RecipeService {
                     recipeIngredient.setRecipe(savedRecipe);
                     recipeIngredient.setIngredient(ingredient);
                     BigDecimal parsedQuantity = QuantityParser.parse(quantity);
-                    if (parsedQuantity != null) {
-                        recipeIngredient.setQuantity(parsedQuantity);
-                    }
+                    recipeIngredient.setQuantity(parsedQuantity != null ? parsedQuantity : BigDecimal.ZERO);
                     recipeIngredient.setMeasurement(measurement);
                     recipeIngredient.setPreparation(preparation);
                     recipeIngredient.setIngredientOrder(i + 1);
@@ -366,9 +364,7 @@ public class RecipeService {
                     recipeIngredient.setRecipe(recipe);
                     recipeIngredient.setIngredient(ingredient);
                     BigDecimal parsedQuantity = QuantityParser.parse(quantity);
-                    if (parsedQuantity != null) {
-                        recipeIngredient.setQuantity(parsedQuantity);
-                    }
+                    recipeIngredient.setQuantity(parsedQuantity != null ? parsedQuantity : BigDecimal.ZERO);
                     recipeIngredient.setMeasurement(measurement);
                     recipeIngredient.setPreparation(preparation);
                     recipeIngredient.setIngredientOrder(i + 1);

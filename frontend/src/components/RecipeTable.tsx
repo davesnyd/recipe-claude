@@ -136,6 +136,7 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
                 <TableCell>
                   <Checkbox
                     checked={isSelected(recipe.recipeId)}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={() => onSelectRecipe(recipe.recipeId)}
                   />
                 </TableCell>
@@ -208,7 +209,7 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
                         variant="outlined"
                         size="small"
                         startIcon={<Edit />}
-                        onClick={() => onEdit(recipe)}
+                        onClick={(e) => { e.stopPropagation(); onEdit(recipe); }}
                         sx={{ minWidth: 'auto' }}
                       >
                         Edit
@@ -219,7 +220,7 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
                         size="small"
                         color="error"
                         startIcon={<Delete />}
-                        onClick={() => onDelete(recipe)}
+                        onClick={(e) => { e.stopPropagation(); onDelete(recipe); }}
                         sx={{ minWidth: 'auto' }}
                       >
                         Delete
@@ -232,7 +233,7 @@ const RecipeTable: React.FC<RecipeTableProps> = ({
                       variant="outlined"
                       size="small"
                       startIcon={isFavorite(recipe.recipeId) ? <Favorite /> : <FavoriteBorder />}
-                      onClick={() => onToggleFavorite(recipe)}
+                      onClick={(e) => { e.stopPropagation(); onToggleFavorite(recipe); }}
                       color={isFavorite(recipe.recipeId) ? 'primary' : 'inherit'}
                       sx={{ minWidth: 'auto' }}
                     >
