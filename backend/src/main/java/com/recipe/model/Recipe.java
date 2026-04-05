@@ -55,7 +55,7 @@ public class Recipe {
     @Column(length = 50)
     private String course;
 
-    @Column(length = 255)
+    @Column(name = "recipe_type", length = 255)
     private String type;
 
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
