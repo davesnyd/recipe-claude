@@ -32,6 +32,7 @@ import { getMeasurementDisplay } from '../utils/ingredientUtils';
 import { sortRecipes, applySort, applyDir } from '../utils/sortUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { slugify, getIsoDate, saveFileWithPicker } from '../utils/exportUtils';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -63,7 +64,7 @@ const HomePage: React.FC = () => {
   const [selectedRecipes, setSelectedRecipes] = useState<number[]>([]);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'recipeml' | 'jsonld'>('pdf');
-  const [exportFilename, setExportFilename] = useState('recipes.pdf');
+  const [exportFilename, setExportFilename] = useState(`recipes.${getIsoDate()}.pdf`);
   const [pdfFontSize, setPdfFontSize] = useState<'small' | 'medium' | 'large'>('small');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -362,7 +363,8 @@ const HomePage: React.FC = () => {
       }
     });
 
-    doc.save(exportFilename);
+    const pdfBlob = doc.output('blob');
+    await saveFileWithPicker(pdfBlob, exportFilename);
   };
 
   const handleExportRecipeML = async () => {
@@ -428,14 +430,7 @@ const HomePage: React.FC = () => {
     xml += '</recipeml>';
 
     const blob = new Blob([xml], { type: 'application/xml' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = exportFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    await saveFileWithPicker(blob, exportFilename);
   };
 
   const handleExportJsonLd = async () => {
@@ -486,14 +481,7 @@ const HomePage: React.FC = () => {
 
     const json = JSON.stringify(jsonLdArray, null, 2);
     const blob = new Blob([json], { type: 'application/ld+json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = exportFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    await saveFileWithPicker(blob, exportFilename);
   };
 
   const handleExport = async () => {
@@ -1032,7 +1020,7 @@ const HomePage: React.FC = () => {
               const fmt = e.target.value as 'pdf' | 'recipeml' | 'jsonld';
               setExportFormat(fmt);
               const ext = fmt === 'pdf' ? 'pdf' : fmt === 'recipeml' ? 'xml' : 'json';
-              setExportFilename(`recipes.${ext}`);
+              setExportFilename(`recipes.${getIsoDate()}.${ext}`);
             }}
           >
             <FormControlLabel

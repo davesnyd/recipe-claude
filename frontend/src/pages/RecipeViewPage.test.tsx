@@ -34,6 +34,7 @@ jest.mock('jspdf', () => {
     text: jest.fn(),
     splitTextToSize: jest.fn(() => []),
     save: jest.fn(),
+    output: jest.fn(() => new Blob(['pdf'], { type: 'application/pdf' })),
     addPage: jest.fn(),
     internal: { pageSize: { getHeight: () => 297, getWidth: () => 210 } },
   }));
@@ -104,7 +105,7 @@ describe('RecipeViewPage', () => {
       await waitFor(() => expect(screen.getByLabelText(/filename/i)).toBeInTheDocument());
     });
 
-    it('defaults filename to recipe.pdf (PDF is default format)', async () => {
+    it('defaults filename to slugified recipe title with .pdf extension', async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
 
@@ -112,11 +113,11 @@ describe('RecipeViewPage', () => {
 
       await waitFor(() => {
         const filenameField = screen.getByLabelText(/filename/i);
-        expect(filenameField).toHaveValue('recipe.pdf');
+        expect(filenameField).toHaveValue('test-recipe.pdf');
       });
     });
 
-    it('defaults filename to recipe.xml when RecipeML is selected', async () => {
+    it('updates filename to slugified title with .xml extension when RecipeML is selected', async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
 
@@ -128,11 +129,11 @@ describe('RecipeViewPage', () => {
 
       await waitFor(() => {
         const filenameField = screen.getByLabelText(/filename/i);
-        expect(filenameField).toHaveValue('recipe.xml');
+        expect(filenameField).toHaveValue('test-recipe.xml');
       });
     });
 
-    it('defaults filename to recipe.json when JSON-LD is selected', async () => {
+    it('updates filename to slugified title with .json extension when JSON-LD is selected', async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Test Recipe')).toBeInTheDocument());
 
@@ -144,7 +145,7 @@ describe('RecipeViewPage', () => {
 
       await waitFor(() => {
         const filenameField = screen.getByLabelText(/filename/i);
-        expect(filenameField).toHaveValue('recipe.json');
+        expect(filenameField).toHaveValue('test-recipe.json');
       });
     });
 

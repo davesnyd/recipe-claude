@@ -38,6 +38,7 @@ jest.mock('jspdf', () => jest.fn().mockImplementation(() => ({
   text: jest.fn(),
   splitTextToSize: jest.fn(() => []),
   save: jest.fn(),
+  output: jest.fn(() => new Blob(['pdf'], { type: 'application/pdf' })),
   addPage: jest.fn(),
   internal: { pageSize: { getHeight: () => 297, getWidth: () => 210 } },
 })));

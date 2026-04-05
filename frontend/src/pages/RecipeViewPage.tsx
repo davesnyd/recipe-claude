@@ -45,6 +45,7 @@ import { Recipe } from '../types';
 import { getMeasurementDisplay } from '../utils/ingredientUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { slugify, saveFileWithPicker } from '../utils/exportUtils';
 
 const RecipeViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -74,7 +75,8 @@ const RecipeViewPage: React.FC = () => {
       ]);
 
       setRecipe(recipeResponse.data);
-      
+      setExportFilename(`${slugify(recipeResponse.data.title)}.pdf`);
+
       // Check if this recipe is in user's favorites
       const favoriteIds = favoritesResponse.data.map(r => r.recipeId);
       setIsFavorite(favoriteIds.includes(recipeId));
@@ -111,7 +113,7 @@ const RecipeViewPage: React.FC = () => {
       .replace(/'/g, '&apos;');
   };
 
-  const handleCreatePDF = () => {
+  const handleCreatePDF = async () => {
     if (!recipe) return;
 
     const scale = pdfFontSize === 'large' ? 2.0 : pdfFontSize === 'medium' ? 1.4 : 1.0;
@@ -204,10 +206,11 @@ const RecipeViewPage: React.FC = () => {
       doc.text(splitNotes, 15, yPosition);
     }
 
-    doc.save(exportFilename);
+    const pdfBlob = doc.output('blob');
+    await saveFileWithPicker(pdfBlob, exportFilename);
   };
 
-  const handleExportRecipeML = () => {
+  const handleExportRecipeML = async () => {
     console.log('handleExportRecipeML: Starting RecipeML export');
     if (!recipe) {
       console.error('handleExportRecipeML: No recipe data available');
@@ -283,19 +286,9 @@ const RecipeViewPage: React.FC = () => {
 
       console.log('handleExportRecipeML: Generated XML:', xml.substring(0, 200) + '...');
 
-      // Download file
       const blob = new Blob([xml], { type: 'application/xml' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = exportFilename;
       console.log('handleExportRecipeML: Downloading file:', exportFilename);
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
+      await saveFileWithPicker(blob, exportFilename);
       console.log('handleExportRecipeML: Export completed successfully');
     } catch (error) {
       console.error('handleExportRecipeML: Error during export:', error);
@@ -304,7 +297,7 @@ const RecipeViewPage: React.FC = () => {
     }
   };
 
-  const handleExportJsonLd = () => {
+  const handleExportJsonLd = async () => {
     console.log('handleExportJsonLd: Starting JSON-LD export');
     if (!recipe) {
       console.error('handleExportJsonLd: No recipe data available');
@@ -362,20 +355,10 @@ const RecipeViewPage: React.FC = () => {
 
       console.log('handleExportJsonLd: Generated JSON-LD:', jsonLd);
 
-      // Download file
       const json = JSON.stringify(jsonLd, null, 2);
       const blob = new Blob([json], { type: 'application/ld+json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = exportFilename;
       console.log('handleExportJsonLd: Downloading file:', exportFilename);
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
+      await saveFileWithPicker(blob, exportFilename);
       console.log('handleExportJsonLd: Export completed successfully');
     } catch (error) {
       console.error('handleExportJsonLd: Error during export:', error);
@@ -384,15 +367,15 @@ const RecipeViewPage: React.FC = () => {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     console.log('handleExport: Starting export, format:', exportFormat);
     try {
       if (exportFormat === 'pdf') {
-        handleCreatePDF();
+        await handleCreatePDF();
       } else if (exportFormat === 'recipeml') {
-        handleExportRecipeML();
+        await handleExportRecipeML();
       } else {
-        handleExportJsonLd();
+        await handleExportJsonLd();
       }
       console.log('handleExport: Export completed, closing dialog');
     } catch (error) {
@@ -609,7 +592,8 @@ const RecipeViewPage: React.FC = () => {
                 const fmt = e.target.value as 'pdf' | 'recipeml' | 'jsonld';
                 setExportFormat(fmt);
                 const ext = fmt === 'pdf' ? 'pdf' : fmt === 'recipeml' ? 'xml' : 'json';
-                setExportFilename(`recipe.${ext}`);
+                const base = recipe ? slugify(recipe.title) : 'recipe';
+                setExportFilename(`${base}.${ext}`);
               }}
             >
               <FormControlLabel
