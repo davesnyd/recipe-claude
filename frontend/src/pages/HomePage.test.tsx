@@ -107,6 +107,52 @@ describe('HomePage import deduplication', () => {
   });
 });
 
+describe('HomePage delete', () => {
+  it('opens delete confirmation dialog when Delete button is clicked', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/there's no going back/i)).toBeInTheDocument();
+    });
+  });
+
+  it('calls deleteRecipe and removes recipe when confirmed', async () => {
+    (recipeApi.deleteRecipe as jest.Mock).mockResolvedValue({});
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => expect(screen.getByText(/there's no going back/i)).toBeInTheDocument());
+
+    const confirmBtn = screen.getByRole('button', { name: /^delete$/i });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(recipeApi.deleteRecipe).toHaveBeenCalledWith(1);
+    });
+  });
+
+  it('does not call deleteRecipe when Cancel is clicked', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => expect(screen.getByText(/there's no going back/i)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(recipeApi.deleteRecipe).not.toHaveBeenCalled();
+  });
+});
+
 describe('HomePage sort persistence', () => {
   it('saves sort key to sessionStorage when sorting', async () => {
     renderPage();
