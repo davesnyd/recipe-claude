@@ -20,8 +20,17 @@ import {
   MenuItem,
   InputLabel,
   FormControl,
+  IconButton,
 } from '@mui/material';
-import { Add as AddIcon, FileDownload as ExportIcon, FileUpload as ImportIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  FileDownload as ExportIcon,
+  FileUpload as ImportIcon,
+  FirstPage as FirstPageIcon,
+  NavigateBefore as PrevPageIcon,
+  NavigateNext as NextPageIcon,
+  LastPage as LastPageIcon,
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import RecipeTable from '../components/RecipeTable';
@@ -95,6 +104,7 @@ const HomePage: React.FC = () => {
   });
 
   const [pageSize, setPageSize] = useState<number>(20);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -141,6 +151,7 @@ const HomePage: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    setCurrentPage(1);
   };
 
   const handleViewRecipe = (recipe: Recipe) => {
@@ -809,6 +820,52 @@ const HomePage: React.FC = () => {
     setImportResults(null);
   };
 
+  const totalPages = Math.max(1, Math.ceil(getCurrentRecipes().length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const getPagedRecipes = (recipes: Recipe[]): Recipe[] =>
+    sortRecipes(recipes, sortKeys, sortDirs).slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const PaginationBar = () => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <IconButton
+        size="small"
+        aria-label="first page"
+        disabled={safePage === 1}
+        onClick={() => setCurrentPage(1)}
+      >
+        <FirstPageIcon />
+      </IconButton>
+      <IconButton
+        size="small"
+        aria-label="previous page"
+        disabled={safePage === 1}
+        onClick={() => setCurrentPage(p => p - 1)}
+      >
+        <PrevPageIcon />
+      </IconButton>
+      <Typography variant="body2" sx={{ mx: 1 }}>
+        {safePage} of {totalPages}
+      </Typography>
+      <IconButton
+        size="small"
+        aria-label="next page"
+        disabled={safePage === totalPages}
+        onClick={() => setCurrentPage(p => p + 1)}
+      >
+        <NextPageIcon />
+      </IconButton>
+      <IconButton
+        size="small"
+        aria-label="last page"
+        disabled={safePage === totalPages}
+        onClick={() => setCurrentPage(totalPages)}
+      >
+        <LastPageIcon />
+      </IconButton>
+    </Box>
+  );
+
   if (isLoading) {
     return (
       <Layout>
@@ -845,21 +902,26 @@ const HomePage: React.FC = () => {
       </Box>
 
       <Paper elevation={1}>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: 2, pt: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel id="page-size-label">Rows per page</InputLabel>
-            <Select
-              labelId="page-size-label"
-              label="Rows per page"
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-            >
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={20}>20</MenuItem>
-              <MenuItem value={50}>50</MenuItem>
-              <MenuItem value={100}>100</MenuItem>
-            </Select>
-          </FormControl>
+        <Box sx={{ px: 2, pt: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel id="page-size-label">Rows per page</InputLabel>
+              <Select
+                labelId="page-size-label"
+                label="Rows per page"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              >
+                <MenuItem value={10}>10</MenuItem>
+                <MenuItem value={20}>20</MenuItem>
+                <MenuItem value={50}>50</MenuItem>
+                <MenuItem value={100}>100</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+            <PaginationBar />
+          </Box>
         </Box>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
@@ -893,7 +955,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(myRecipes, sortKeys, sortDirs).slice(0, pageSize)}
+            recipes={getPagedRecipes(myRecipes)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -945,7 +1007,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(favoriteRecipes, sortKeys, sortDirs).slice(0, pageSize)}
+            recipes={getPagedRecipes(favoriteRecipes)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -997,7 +1059,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Box>
           <RecipeTable
-            recipes={sortRecipes(publicRecipes, sortKeys, sortDirs).slice(0, pageSize)}
+            recipes={getPagedRecipes(publicRecipes)}
             onView={handleViewRecipe}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteClick}
@@ -1042,6 +1104,10 @@ const HomePage: React.FC = () => {
           </Box>
         </TabPanel>
       </Paper>
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <PaginationBar />
+      </Box>
 
       {/* Export Dialog */}
       <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)}>

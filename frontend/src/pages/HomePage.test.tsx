@@ -155,6 +155,33 @@ describe('HomePage delete', () => {
   });
 });
 
+describe('HomePage pagination', () => {
+  it('shows page indicator "1 of 1" for a single page of results', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+    const indicators = screen.getAllByText('1 of 1');
+    expect(indicators.length).toBeGreaterThan(0);
+  });
+
+  it('first and previous page buttons are disabled on page 1', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+    const firstBtns = screen.getAllByRole('button', { name: /first page/i });
+    const prevBtns = screen.getAllByRole('button', { name: /previous page/i });
+    expect(firstBtns[0]).toBeDisabled();
+    expect(prevBtns[0]).toBeDisabled();
+  });
+
+  it('next and last page buttons are disabled when only one page exists', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+    const nextBtns = screen.getAllByRole('button', { name: /next page/i });
+    const lastBtns = screen.getAllByRole('button', { name: /last page/i });
+    expect(nextBtns[0]).toBeDisabled();
+    expect(lastBtns[0]).toBeDisabled();
+  });
+});
+
 describe('HomePage export scope', () => {
   it('Export button is enabled even when no recipes are selected', async () => {
     renderPage();
