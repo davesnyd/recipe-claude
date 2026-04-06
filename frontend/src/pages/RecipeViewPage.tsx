@@ -219,7 +219,7 @@ const RecipeViewPage: React.FC = () => {
     console.log('handleExportRecipeML: Starting RecipeML export');
     if (!recipe) {
       console.error('handleExportRecipeML: No recipe data available');
-      return;
+      return null;
     }
 
     try {
@@ -304,7 +304,7 @@ const RecipeViewPage: React.FC = () => {
     console.log('handleExportJsonLd: Starting JSON-LD export');
     if (!recipe) {
       console.error('handleExportJsonLd: No recipe data available');
-      return;
+      return null;
     }
 
     try {
