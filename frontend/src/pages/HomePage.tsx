@@ -66,6 +66,7 @@ const HomePage: React.FC = () => {
   const [exportFormat, setExportFormat] = useState<'pdf' | 'recipeml' | 'jsonld'>('pdf');
   const [exportFilename, setExportFilename] = useState(`recipes.${getIsoDate()}.pdf`);
   const [pdfFontSize, setPdfFontSize] = useState<'small' | 'medium' | 'large'>('small');
+  const [exportScope, setExportScope] = useState<'selected' | 'all'>('selected');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -242,8 +243,14 @@ const HomePage: React.FC = () => {
   };
 
   const getSelectedRecipeData = async (): Promise<Recipe[]> => {
+    // Preserve table sort order in the export
+    const sortedCurrentRecipes = sortRecipes(getCurrentRecipes(), sortKeys, sortDirs);
+    const orderedIds = sortedCurrentRecipes
+      .filter(r => selectedRecipes.includes(r.recipeId))
+      .map(r => r.recipeId);
+
     const selectedData: Recipe[] = [];
-    for (const recipeId of selectedRecipes) {
+    for (const recipeId of orderedIds) {
       try {
         const response = await recipeApi.getRecipe(recipeId);
         selectedData.push(response.data);
@@ -252,6 +259,24 @@ const HomePage: React.FC = () => {
       }
     }
     return selectedData;
+  };
+
+  const getAllRecipeData = async (): Promise<Recipe[]> => {
+    const sortedRecipes = sortRecipes(getCurrentRecipes(), sortKeys, sortDirs);
+    const allData: Recipe[] = [];
+    for (const recipe of sortedRecipes) {
+      try {
+        const response = await recipeApi.getRecipe(recipe.recipeId);
+        allData.push(response.data);
+      } catch (error) {
+        console.error(`Error loading recipe ${recipe.recipeId}:`, error);
+      }
+    }
+    return allData;
+  };
+
+  const getExportRecipes = async (): Promise<Recipe[]> => {
+    return exportScope === 'all' ? getAllRecipeData() : getSelectedRecipeData();
   };
 
   const escapeXml = (str: string): string => {
@@ -264,7 +289,7 @@ const HomePage: React.FC = () => {
   };
 
   const generatePDFBlob = async (): Promise<Blob> => {
-    const recipes = await getSelectedRecipeData();
+    const recipes = await getExportRecipes();
     if (recipes.length === 0) return;
 
     const scale = pdfFontSize === 'large' ? 2.0 : pdfFontSize === 'medium' ? 1.4 : 1.0;
@@ -359,7 +384,13 @@ const HomePage: React.FC = () => {
         doc.setFontSize(9 * scale);
         doc.setFont('helvetica', 'normal');
         const splitNotes = doc.splitTextToSize(recipe.note, 180);
-        doc.text(splitNotes, 15, yPosition);
+        const noteLineH = 5 * scale;
+        const pgH = doc.internal.pageSize.getHeight();
+        for (const line of splitNotes) {
+          if (yPosition > pgH - 20) { doc.addPage(); yPosition = 20; }
+          doc.text(line, 15, yPosition);
+          yPosition += noteLineH;
+        }
       }
     });
 
@@ -367,7 +398,7 @@ const HomePage: React.FC = () => {
   };
 
   const generateRecipeMLBlob = async (): Promise<Blob> => {
-    const recipes = await getSelectedRecipeData();
+    const recipes = await getExportRecipes();
     if (recipes.length === 0) return;
 
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -432,7 +463,7 @@ const HomePage: React.FC = () => {
   };
 
   const generateJsonLdBlob = async (): Promise<Blob> => {
-    const recipes = await getSelectedRecipeData();
+    const recipes = await getExportRecipes();
     if (recipes.length === 0) return new Blob([], { type: 'application/ld+json' });
 
     const jsonLdArray = recipes.map(recipe => {
@@ -899,10 +930,9 @@ const HomePage: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<ExportIcon />}
-                onClick={() => setExportDialogOpen(true)}
-                disabled={selectedRecipes.length === 0}
+                onClick={() => { setExportScope(selectedRecipes.length === 0 ? 'all' : 'selected'); setExportDialogOpen(true); }}
               >
-                Export... ({selectedRecipes.length} selected)
+                Export...
               </Button>
             </Box>
           </Box>
@@ -952,10 +982,9 @@ const HomePage: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<ExportIcon />}
-                onClick={() => setExportDialogOpen(true)}
-                disabled={selectedRecipes.length === 0}
+                onClick={() => { setExportScope(selectedRecipes.length === 0 ? 'all' : 'selected'); setExportDialogOpen(true); }}
               >
-                Export... ({selectedRecipes.length} selected)
+                Export...
               </Button>
             </Box>
           </Box>
@@ -1005,10 +1034,9 @@ const HomePage: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<ExportIcon />}
-                onClick={() => setExportDialogOpen(true)}
-                disabled={selectedRecipes.length === 0}
+                onClick={() => { setExportScope(selectedRecipes.length === 0 ? 'all' : 'selected'); setExportDialogOpen(true); }}
               >
-                Export... ({selectedRecipes.length} selected)
+                Export...
               </Button>
             </Box>
           </Box>
@@ -1017,10 +1045,30 @@ const HomePage: React.FC = () => {
 
       {/* Export Dialog */}
       <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)}>
-        <DialogTitle>Export Selected Recipes</DialogTitle>
+        <DialogTitle>Export Recipes</DialogTitle>
         <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Which recipes to export:
+          </Typography>
+          <RadioGroup
+            value={exportScope}
+            onChange={(e) => setExportScope(e.target.value as 'selected' | 'all')}
+            sx={{ mb: 2 }}
+          >
+            <FormControlLabel
+              value="selected"
+              control={<Radio />}
+              label={`Selected recipes (${selectedRecipes.length})`}
+              disabled={selectedRecipes.length === 0}
+            />
+            <FormControlLabel
+              value="all"
+              control={<Radio />}
+              label="All recipes in this tab"
+            />
+          </RadioGroup>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Select the export format for {selectedRecipes.length} recipe(s):
+            Select the export format:
           </Typography>
           <RadioGroup
             value={exportFormat}

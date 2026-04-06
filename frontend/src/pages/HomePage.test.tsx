@@ -13,6 +13,7 @@ jest.mock('../services/api', () => ({
     deleteRecipe: jest.fn(),
     markAsFavorite: jest.fn(),
     unmarkAsFavorite: jest.fn(),
+    getRecipe: jest.fn(),
   },
   importApi: {
     importRecipes: jest.fn(),
@@ -151,6 +152,26 @@ describe('HomePage delete', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
     expect(recipeApi.deleteRecipe).not.toHaveBeenCalled();
+  });
+});
+
+describe('HomePage export scope', () => {
+  it('Export button is enabled even when no recipes are selected', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+    // The first Export... button in the My Recipes tab
+    const exportBtns = screen.getAllByRole('button', { name: /export/i });
+    expect(exportBtns[0]).not.toBeDisabled();
+  });
+
+  it('export dialog shows All recipes in this tab option', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Apple Pie')).toBeInTheDocument());
+    const exportBtns = screen.getAllByRole('button', { name: /export/i });
+    fireEvent.click(exportBtns[0]);
+    await waitFor(() => {
+      expect(screen.getByText(/all recipes in this tab/i)).toBeInTheDocument();
+    });
   });
 });
 

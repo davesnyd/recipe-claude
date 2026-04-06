@@ -203,7 +203,13 @@ const RecipeViewPage: React.FC = () => {
       doc.setFontSize(10 * scale);
       doc.setFont('helvetica', 'normal');
       const splitNotes = doc.splitTextToSize(recipe.note, 180);
-      doc.text(splitNotes, 15, yPosition);
+      const noteLineH = 5 * scale;
+      const pgH = doc.internal.pageSize.getHeight();
+      for (const line of splitNotes) {
+        if (yPosition > pgH - 20) { doc.addPage(); yPosition = 20; }
+        doc.text(line, 15, yPosition);
+        yPosition += noteLineH;
+      }
     }
 
     return doc.output('blob') as Blob;
