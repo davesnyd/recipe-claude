@@ -301,7 +301,7 @@ const HomePage: React.FC = () => {
 
   const generatePDFBlob = async (): Promise<Blob> => {
     const recipes = await getExportRecipes();
-    if (recipes.length === 0) return;
+    if (recipes.length === 0) return new Blob([], { type: 'application/pdf' });
 
     const scale = pdfFontSize === 'large' ? 2.0 : pdfFontSize === 'medium' ? 1.4 : 1.0;
     const doc = new jsPDF();
@@ -410,7 +410,7 @@ const HomePage: React.FC = () => {
 
   const generateRecipeMLBlob = async (): Promise<Blob> => {
     const recipes = await getExportRecipes();
-    if (recipes.length === 0) return;
+    if (recipes.length === 0) return new Blob([], { type: 'application/xml' });
 
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<recipeml version="0.5">\n';
