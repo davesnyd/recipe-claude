@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+  Autocomplete,
   Box,
   TextField,
   Button,
@@ -48,6 +49,19 @@ import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { recipeApi } from '../services/api';
 import { Recipe, RecipeIngredient, RecipeStep, CreateRecipeIngredient } from '../types';
+
+const UNIT_OPTIONS = [
+  // Volume (US)
+  'teaspoon', 'tablespoon', 'fluid ounce', 'cup', 'pint', 'quart', 'gallon',
+  // Weight (US)
+  'ounce', 'pound',
+  // Weight (metric)
+  'milligram', 'gram', 'kilogram',
+  // Volume (metric)
+  'milliliter', 'liter',
+  // Count
+  'each',
+];
 
 // Sortable wrapper component for ingredients
 interface SortableIngredientProps {
@@ -561,19 +575,19 @@ const RecipeEditPage: React.FC = () => {
                     inputRef={(el) => ingredientRefs.current[`quantity-${index}`] = el}
                     sx={{ width: 150 }}
                   />
-                  <TextField
-                    label="Unit"
-                    value={ingredient.measurementName || ''}
-                    onChange={(e) => handleIngredientChange(index, 'measurementName', e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const ingredientRef = ingredientRefs.current[`ingredient-${index}`];
-                        if (ingredientRef) ingredientRef.focus();
-                      }
-                    }}
-                    inputRef={(el) => ingredientRefs.current[`unit-${index}`] = el}
+                  <Autocomplete
+                    freeSolo
+                    options={UNIT_OPTIONS}
+                    inputValue={ingredient.measurementName || ''}
+                    onInputChange={(_, newValue) => handleIngredientChange(index, 'measurementName', newValue)}
                     sx={{ width: 200 }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Unit"
+                        inputRef={(el) => ingredientRefs.current[`unit-${index}`] = el}
+                      />
+                    )}
                   />
                   <TextField
                     label="Ingredient"

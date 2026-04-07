@@ -446,6 +446,41 @@ describe('RecipeEditPage', () => {
     });
   });
 
+  describe('Unit field as autocomplete', () => {
+    it('unit field has combobox role (is a dropdown, not plain text)', () => {
+      renderWithRouter(<RecipeEditPage />, { route: '/recipe/new' });
+      const unitInput = screen.getByLabelText('Unit');
+      expect(unitInput).toHaveAttribute('role', 'combobox');
+    });
+
+    it('unit field shows predefined options when opened', async () => {
+      renderWithRouter(<RecipeEditPage />, { route: '/recipe/new' });
+      const unitInput = screen.getByLabelText('Unit');
+      fireEvent.keyDown(unitInput, { key: 'ArrowDown' });
+      await waitFor(() => {
+        expect(screen.getByText('teaspoon')).toBeInTheDocument();
+        expect(screen.getByText('cup')).toBeInTheDocument();
+        expect(screen.getByText('gram')).toBeInTheDocument();
+        expect(screen.getByText('each')).toBeInTheDocument();
+      });
+    });
+
+    it('unit field accepts a custom value not in the predefined list', () => {
+      renderWithRouter(<RecipeEditPage />, { route: '/recipe/new' });
+      const unitInput = screen.getByLabelText('Unit');
+      fireEvent.change(unitInput, { target: { value: 'pinch' } });
+      expect(unitInput).toHaveValue('pinch');
+    });
+
+    it('unit field can be cleared to empty', () => {
+      renderWithRouter(<RecipeEditPage />, { route: '/recipe/new' });
+      const unitInput = screen.getByLabelText('Unit');
+      fireEvent.change(unitInput, { target: { value: 'cup' } });
+      fireEvent.change(unitInput, { target: { value: '' } });
+      expect(unitInput).toHaveValue('');
+    });
+  });
+
   describe('Drag and drop functionality', () => {
     it('ingredients are wrapped in sortable context', () => {
       renderWithRouter(<RecipeEditPage />, { route: '/recipe/new' });
